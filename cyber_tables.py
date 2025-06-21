@@ -45,6 +45,7 @@ from datetime import datetime, timedelta
 # column = cyber_table.return_column_object_by_index(0)
 # column.lock_column_data_type()
 # column.unlock_column_data_type()
+# cyber_table.analyse_columns()
 
 #----------------------------
 ## Sub Tables
@@ -1625,7 +1626,7 @@ class CyberTable():
         return new_cyber_table        
         
     ### String Functions    
-    def clean_string_column(self, column_index = None, column_name = None, capital_first_latter = True):
+    def clean_string_column(self, column_index = None, column_name = None, capital_first_letter = True):
         found_column_index = self.check_and_return_column_index(column_index = column_index, column_name = column_name)
         column = self.columns[found_column_index]
         name = column.name
@@ -1637,7 +1638,7 @@ class CyberTable():
             string_value:str = row.items[found_column_index]
             string_value = string_value.strip()
             
-            if capital_first_latter == True:
+            if capital_first_letter == True:
                 first_letter:str = string_value[0]
                 first_letter = first_letter.upper()
                 string_value = first_letter + string_value[1:]
