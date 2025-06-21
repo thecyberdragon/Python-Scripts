@@ -79,7 +79,7 @@ from datetime import datetime, timedelta
 # non_nulls = cyber_table.return_non_null_count(3)
 # variance = cyber_table.return_variance(column)
 # std = cyber_table.return_standard_deviation(column)
-# range = cyber_table.return-range(column_index)
+# range = cyber_table.return_range(column_index)
 # trues = cyber_table.return_true_count_from_column(8)
 # falses = cyber_table.return_false_count_from_column(8)
 # cyber_table.add_calculation_column(0, calculation="individual_variance")
@@ -91,9 +91,9 @@ from datetime import datetime, timedelta
 # cyber_table.add_calculation_column(9, calculation="below_threshold_percent", calculation_value= 50)
 # cyber_table.add_calculation_column(0, calculation="rank")
 # cyber_table.add_calculation_column(0, calculation="ntile", calculation_value= 4)
-# cyber_table.add_calculation_column(0, calculation="false_percentage")
-# cyber_table.add_calculation_column(0, calculation="true_percentage")
+
 # aggregated_table = cyber_table.aggregate(reference_column_indexes = [], calculation_column_indexes = [],  calculations = [])
+# aggregation_options = ["sum", "mean", "mode", "median", "max", "min", "nulls", "non_nulls", "row_counts", "standard_deviation", "variance", "range", "true_percentage", "false_percentage"]      
 
 ## Grouping
 # groups = cyber_table.return_groups(column_indexes = [0, 4])
