@@ -1,6 +1,9 @@
 ### Python Scripts    
 These scripts are a mix of 'run it when you want it' and automated 'make life easier' scripts.    
 
+#### cyber_tables
+An alternative to pandas, a Python module for performing data analysis, cleaning and aggregating data.
+
 #### downloads_sorter
 This script will automatically create folders in your downloads folder for each file extention in there and wrangle the files into the relevant folder. Modify line 3 to be your downloads folder.    
 To make this most effective, I've placed a copy in my Windows startup path. Run -> shell:startup -> Copy into this folder.     
