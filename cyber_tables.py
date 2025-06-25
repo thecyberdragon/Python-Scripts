@@ -138,239 +138,6 @@ class Row():
         self.items = items  
     def print(self):
         print(f"Index: {self.index}, Items: {self.items}")
-
-class CyberTableGroup():
-    def __init__(self):
-        self.table_count = 0
-        self.groups = []
-        self.columns = []
-        self.grouped_indexes = []
-        
-    def add_table(self, table, group_indexes = []):          
-        if self.grouped_indexes == []:
-            self.grouped_indexes = group_indexes
-            
-        if self.table_count == 0:
-            for idx, column in table.columns.items():
-                name = column.name
-                data_type = column.data_type
-                permissions = column.allow_analyse
-                
-                new_column = Column(name, idx, data_type)
-                new_column.allow_analyse = permissions                
-                self.columns.append(new_column)
-                
-            self.groups.append(table)
-            self.table_count += 1  
-        else:
-            result = self._internal_check_incoming_table(table)
-            if result == True:
-                self.groups.append(table)
-                self.table_count += 1  
-            else:
-                raise ValueError(f"Incoming table does not match the column schema of the group column list")                      
-        
-    def return_tables(self) -> list:
-        return self.groups    
-    
-    def aggregate(self, reference_column_indexes = [], reference_column_names = [], calculation_column_indexes = [], calculation_column_names = [],  calculations = []):
-        options = ["sum", "mean", "mode", "median", "max", "min", "nulls", "non_nulls", "row_counts", "standard_deviation", "variance", "range", "true_percentage", "false_percentage"]      
-                
-        for calculation in calculations:
-            if calculation not in options:
-                raise KeyError(f"Input option {calculation} not in list of approved options: {options}")
-            
-        column_index_list = []
-        calculation_column_index_list = []
-        
-        column_indexes = [column_object.index for column_object in self.columns]
-        
-        if reference_column_indexes != []:
-            for index in reference_column_indexes:
-                
-                if index not in column_indexes:
-                    raise ValueError(f"Input index {index} not in list of known column indexes")
-                else:
-                    column_index_list.append(index)
-                
-        elif reference_column_names != []:
-            for reference_name in reference_column_names:
-                found = False
-                for column in self.columns:
-                    name = column.name            
-                    if name == reference_name:
-                        found = True
-                        column_index_list.append(idx)
-                        break
-                if found == False:
-                    raise KeyError(f"Column name {reference_name} not found in list of known column names")
-                
-        if calculation_column_indexes != []:
-            for index in calculation_column_indexes:
-                if index not in column_indexes:
-                    raise ValueError(f"Input index {index} not in list of known column indexes")
-                else:
-                    calculation_column_index_list.append(index)
-                
-        elif calculation_column_names != []:
-            for calculation_name in calculation_column_names:
-                found = False
-                for column in self.columns:
-                    name = column.name
-                    idx = column.index            
-                    if name == calculation_name:
-                        found = True
-                        column_index_list.append(idx)
-                        break
-                if found == False:
-                    raise KeyError(f"Column name {calculation_name} not found in list of known column names")               
-        
-        if len(calculation_column_index_list) != len(calculations):
-            raise KeyError(f"Count of columns {len(calculation_column_index_list)} does not match the number of calculations {len(calculations)}")
-        for index in column_index_list:
-            if index in calculation_column_index_list:
-                raise KeyError(f"Reference columns cannot also be calculation columns, they bust be distinctly separate")            
-        
-        aggregate_cybertable = CyberTable()
-        
-        for idx in column_index_list:
-            name = self.columns[idx].name
-            aggregate_cybertable._internal_add_column(name)
-            
-        for idx in range(len(calculation_column_index_list)):
-            calculation_column_index = calculation_column_index_list[idx]
-            calculation = calculations[idx]
-            new_name = self.columns[calculation_column_index].name + "_" + calculation           
-            aggregate_cybertable._internal_add_column(new_name)
-
-        row_index = 0
-        for table in self.groups:
-            aggregate_row = []
-            top_row = table.rows[0]
-            items = top_row.items
-            
-            for reference in column_index_list:
-                aggregate_row.append(items[reference])
-                
-            for iteration in range(len(calculation_column_index_list)):
-                calculation_idx = calculation_column_index_list[iteration]
-                calculation = calculations[iteration]
-                
-                if calculation == "min":
-                    min = table.return_min_value(calculation_idx)
-                    aggregate_row.append(min)                
-                elif calculation == "max":
-                    max = table.return_max_value(calculation_idx)
-                    aggregate_row.append(max)
-                elif calculation == "nulls":
-                    nulls = table.return_null_count(calculation_idx)
-                    aggregate_row.append(nulls)
-                elif calculation == "non_nulls":
-                    non_nulls = table.return_non_null_count(calculation_idx)
-                    aggregate_row.append(non_nulls)
-                elif calculation == "mean":
-                    mean = table.return_mean(calculation_idx)
-                    aggregate_row.append(mean)
-                elif calculation == "median":
-                    median = table.return_median(calculation_idx)
-                    aggregate_row.append(median)
-                elif calculation == "mode":
-                    mode = table.return_mode(calculation_idx)
-                    aggregate_row.append(mode[0])
-                elif calculation == "sum":
-                    sum = table.return_sum(calculation_idx)
-                    aggregate_row.append(sum)
-                elif calculation == "row_counts":
-                    aggregate_row.append(table.row_count)
-                elif calculation == "standard_deviation":
-                    std = table.return_standard_deviation(calculation_idx)
-                    aggregate_row.append(std)
-                elif calculation == "variance":
-                    var = table.return_variance(calculation_idx)
-                    aggregate_row.append(var)
-                elif calculation == "range":
-                    value_range = table.return_range(calculation_idx)
-                    aggregate_row.append(value_range)
-                elif calculation == "true_percentage":
-                    true_count = table.return_true_count_from_column(calculation_idx)
-                    false_count = table.return_false_count_from_column(calculation_idx)
-                    total_values = true_count + false_count
-                    percent = (true_count / total_values) * 100
-                    aggregate_row.append(percent)
-                elif calculation == "false_percentage":
-                    false_count = table.return_false_count_from_column(calculation_idx)
-                    true_count = table.return_true_count_from_column(calculation_idx)
-                    total_values = true_count + false_count
-                    percent = (false_count / total_values) * 100
-                    aggregate_row.append(percent)
-                
-            new_row = Row(row_index, aggregate_row)            
-            aggregate_cybertable._internal_add_row(new_row, row_index)
-            row_index += 1
-            
-        aggregate_cybertable.analyse_columns()
-        return aggregate_cybertable
-              
-    def add_batch_row_calculations(self, g_reference_column_index = None, g_reference_column_name = None, g_calculation = None, g_calculation_value = None):
-        if self.table_count == 0:
-            raise IndexError(f"There are no tables in the group")        
-        for table in self.groups:
-            table.add_calculation_column(reference_column_index = g_reference_column_index, reference_column_name = g_reference_column_name, calculation = g_calculation, calculation_value = g_calculation_value)
-    
-    def _internal_check_incoming_table(self, table):
-        for idx, column in table.columns.items():
-            name = column.name
-            data_type = column.data_type
-            
-            list_index = None
-            for column in self.columns:
-                column_index = column.index
-                if column_index == idx:
-                    list_index = column_index
-                    break
-            
-            if list_index is None:
-                raise KeyError(f"Incoming table column indexes do not match the first table in the group")
-            
-            existing_column = self.columns[idx]
-            existing_name = existing_column.name
-            existing_data_type = existing_column.data_type
-            
-            if existing_name != name:
-                raise KeyError(f"Incoming table column name {name} at index {idx} from new table does not match the column name {existing_name} from the group columns")
-            if existing_data_type != data_type:
-                raise KeyError(f"Incoming table column {name} data type of {data_type} does not match the existing data type {existing_data_type} from the group column of the same name")
-        return True
-        
-    def merge_into_cyber_table(self):
-        new_table = CyberTable()     
-        
-        for column in self.columns:
-            new_table._internal_add_column(column)
-            
-        for table in self.groups:
-            for row in table.rows.values():
-                new_table.add_row(row.items)
-                
-        return new_table
-    
-    def top(self, number):
-        if self.table_count == 0:
-            raise IndexError(f"There are no tables in the group")
-        for table in self.groups:
-            table.top(number)
-            
-    def bottom(self, number):
-        if self.table_count == 0:
-            raise IndexError(f"There are no tables in the group")
-        for table in self.groups:
-            table.bottom(number)
-            
-    def random_selection(self, number):
-        if self.table_count == 0:
-            raise IndexError(f"There are no tables in the group")
-        for table in self.groups:
-            table.random_selection(number)
             
 class CyberTable():
     def __init__(self):
@@ -398,13 +165,13 @@ class CyberTable():
         for column in self.columns.values():
             print(f"Index: {column.index}, Name: {column.name}, Data Type: {column.data_type}")
 
-    def column_names(self):
+    def column_names(self) -> str:
         column_names = []
         for column in self.columns.values():
             column_names.append(column.name)
         return " | ".join(column_names)
     
-    ### Columns
+    ### Columns (Internal)
     def _internal_add_column(self, column):
         if type(column) is Column:
             self.columns[column.index] = column        
@@ -413,7 +180,85 @@ class CyberTable():
             new_column = Column(column, self.column_count)           
             self.columns[new_column.index] = new_column        
             self.column_count += 1
+       
+    def _internal_check_datatype_before_conversion(self, index, data_type) -> bool:
+        try:            
+            for idx, row in self.rows.items():
+                items = row.items
+                old_value = items[index]
+                
+                if old_value == "NULL":
+                    break
+                
+                if data_type == "string": items[index] = str(old_value)
+                elif data_type == "int": items[index] = int(old_value)
+                elif data_type == "decimal": items[index] = float(old_value)
+                elif data_type == "bool": items[index] = bool(old_value)
+                elif data_type == "date": items[index] = datetime.strptime(old_value, "%Y-%m-%d")
+                elif data_type == "datetime": items[index] = datetime.strptime(old_value, "%Y-%m-%d %H:%M:%S")
+                elif data_type == "NULL": items[index] = "NULL"                      
+            return True    
+        except:
+            return False 
+    
+    def _internal_set_column_data_as_datatype(self, index, data_type):
+        try:            
+            for idx, row in self.rows.items():
+                items = row.items
+                old_value = items[index]
+                
+                if old_value == "NULL":
+                    continue
+                
+                if data_type == "string": items[index] = str(old_value)
+                elif data_type == "int": items[index] = int(old_value)
+                elif data_type == "decimal": items[index] = float(old_value)
+                elif data_type == "bool": items[index] = string_to_bool(old_value)
+                elif data_type == "date" and type(old_value) is datetime: items[index] = datetime.strftime(old_value, "%Y-%m-%d")
+                elif data_type == "datetime" and type(old_value) is datetime: items[index] = datetime.strftime(old_value, "%Y-%m-%d %H:%M:%S")
+                elif data_type == "date": items[index] = datetime.strptime(old_value, "%Y-%m-%d")
+                elif data_type == "datetime": items[index] = datetime.strptime(old_value, "%Y-%m-%d %H:%M:%S")
+                elif data_type == "NULL": items[index] = "NULL"
+                
+                self.rows[idx].set_items(items)                
+            
+        except ValueError as ve:
+            raise ValueError(f"Value Error setting data type for index {index} to type {data_type}\n{ve}")
+        except TypeError as te:
+            raise TypeError(f"Value Error setting data type for index {index} to type {data_type}\n{te}")
+
+    def _internal_insert_data_into_column(self, data:list, column_index = None, column_name = None):
+        input_row_length = len(data)
+        row_count = self.row_count        
+        length_check = input_row_length == row_count       
         
+        if length_check == False:
+            raise ValueError(f"Input data of count {input_row_length} does not match the row count of the table: {self.row_count}")
+                
+        if column_index is not None:
+            if column_index not in self.columns.keys():
+                raise ValueError(f"Input column index {column_index} not in list of known column indexes")                
+            
+            for row_index, row_object in self.rows.items():
+                new_data = data[row_index]
+                row_data:list = row_object.items
+                row_data.insert(column_index, new_data)   
+                self.update_row(row_index, row_data)  
+                
+        elif column_name is not None:
+            for idx, column_object in self.columns.items():
+                column_object_name = column_object.name
+                if column_name == column_object_name:
+                    if idx not in self.columns.keys():
+                        raise ValueError(f"Input column name {column_name} not in list of known columns")
+                    for row_index, row_object in self.rows.items():
+                        new_data = data[row_index]
+                        row_data:list = row_object.items
+                        row_data.insert(column_index, new_data)
+                        self.update_row(row_index, row_data)
+                        return
+       
+    ### Columnns
     def update_column_name(self, new_column_name, column_index = None, column_name = None):
         if column_index is not None:
             if column_index not in self.columns.keys():
@@ -432,7 +277,7 @@ class CyberTable():
                     self.columns[column_index] = column_object
                     return
     
-    def return_column_index_by_name(self, column_name):
+    def return_column_index_by_name(self, column_name) -> int:
         for index, column_object in self.columns.items():
             name = column_object.name
             if name == column_name:
@@ -479,55 +324,9 @@ class CyberTable():
             self.columns[index].lock_data_type()   
             self.columns[index].set_data_type(new_data_type)
         else:
-            raise ValueError(f"Column index {index} failed pre-conversion checks for data type {new_data_type}")
-            
-    def _internal_check_datatype_before_conversion(self, index, data_type) -> bool:
-        try:            
-            for idx, row in self.rows.items():
-                items = row.items
-                old_value = items[index]
-                
-                if old_value == "NULL":
-                    break
-                
-                if data_type == "string": items[index] = str(old_value)
-                elif data_type == "int": items[index] = int(old_value)
-                elif data_type == "decimal": items[index] = float(old_value)
-                elif data_type == "bool": items[index] = bool(old_value)
-                elif data_type == "date": items[index] = datetime.strptime(old_value, "%Y-%m-%d")
-                elif data_type == "datetime": items[index] = datetime.strptime(old_value, "%Y-%m-%d %H:%M:%S")
-                elif data_type == "NULL": items[index] = "NULL"                      
-            return True    
-        except:
-            return False 
+            raise ValueError(f"Column index {index} failed pre-conversion checks for data type {new_data_type}")     
     
-    def _internal_set_column_data_as_datatype(self, index, data_type):
-        try:            
-            for idx, row in self.rows.items():
-                items = row.items
-                old_value = items[index]
-                
-                if old_value == "NULL":
-                    continue
-                
-                if data_type == "string": items[index] = str(old_value)
-                elif data_type == "int": items[index] = int(old_value)
-                elif data_type == "decimal": items[index] = float(old_value)
-                elif data_type == "bool": items[index] = string_to_bool(old_value)
-                elif data_type == "date" and type(old_value) is datetime: items[index] = datetime.strftime(old_value, "%Y-%m-%d")
-                elif data_type == "datetime" and type(old_value) is datetime: items[index] = datetime.strftime(old_value, "%Y-%m-%d %H:%M:%S")
-                elif data_type == "date": items[index] = datetime.strptime(old_value, "%Y-%m-%d")
-                elif data_type == "datetime": items[index] = datetime.strptime(old_value, "%Y-%m-%d %H:%M:%S")
-                elif data_type == "NULL": items[index] = "NULL"
-                
-                self.rows[idx].set_items(items)                
-            
-        except ValueError as ve:
-            raise ValueError(f"Value Error setting data type for index {index} to type {data_type}\n{ve}")
-        except TypeError as te:
-            raise TypeError(f"Value Error setting data type for index {index} to type {data_type}\n{te}")
-    
-    def return_column_data(self, column_index = None, column_name = None, include_nulls = True):
+    def return_column_data(self, column_index = None, column_name = None, include_nulls = True) -> list:
         output_data = []
         if column_index is not None:
             if column_index not in self.columns:
@@ -612,7 +411,7 @@ class CyberTable():
             row_items.pop(removal_index)
             self.rows[index].items = row_items
         
-    def remove_column(self, index = None, name = None):
+    def remove_column(self, index = None, name = None) -> Column:
         if index is not None:
             self.column_count -= 1
             self.remove_row_data_by_column_index(index)
@@ -624,7 +423,7 @@ class CyberTable():
                     self.remove_row_data_by_column_index(index)
                     return self.columns.pop(index)   
                  
-    def insert_column(self, name):
+    def insert_column(self, name) -> int:
         self.reset_column_indexes()
         new_index = self.column_count
         new_column = Column(name, new_index)
@@ -638,38 +437,7 @@ class CyberTable():
     def insert_column_with_data(self, name:str, data:list, auto_analyse = True):
         new_index = self.insert_column(name)
         self.update_data_in_column(data, column_index=new_index, auto_analyse=auto_analyse)        
-           
-    def _internal_insert_data_into_column(self, data:list, column_index = None, column_name = None):
-        input_row_length = len(data)
-        row_count = self.row_count        
-        length_check = input_row_length == row_count       
-        
-        if length_check == False:
-            raise ValueError(f"Input data of count {input_row_length} does not match the row count of the table: {self.row_count}")
-                
-        if column_index is not None:
-            if column_index not in self.columns.keys():
-                raise ValueError(f"Input column index {column_index} not in list of known column indexes")                
-            
-            for row_index, row_object in self.rows.items():
-                new_data = data[row_index]
-                row_data:list = row_object.items
-                row_data.insert(column_index, new_data)   
-                self.update_row(row_index, row_data)  
-                
-        elif column_name is not None:
-            for idx, column_object in self.columns.items():
-                column_object_name = column_object.name
-                if column_name == column_object_name:
-                    if idx not in self.columns.keys():
-                        raise ValueError(f"Input column name {column_name} not in list of known columns")
-                    for row_index, row_object in self.rows.items():
-                        new_data = data[row_index]
-                        row_data:list = row_object.items
-                        row_data.insert(column_index, new_data)
-                        self.update_row(row_index, row_data)
-                        return
-                    
+                   
     def update_data_in_column(self, data:list, column_index = None, column_name = None, auto_analyse = True):
         input_row_length = len(data)
         row_count = self.row_count        
@@ -722,7 +490,7 @@ class CyberTable():
             copy.reset_row_indexes()
             return copy
       
-    def return_true_count_from_column(self, column_index = None, column_name = None):
+    def return_true_count_from_column(self, column_index = None, column_name = None) -> int:
         index = self.check_and_return_column_index(column_index=column_index, column_name=column_name)  
         if index is not None:
             column = self.columns[index]
@@ -737,7 +505,7 @@ class CyberTable():
                     counter += 1
             return counter                
             
-    def return_false_count_from_column(self, column_index = None, column_name = None):
+    def return_false_count_from_column(self, column_index = None, column_name = None) -> int:
         index = self.check_and_return_column_index(column_index=column_index, column_name=column_name)  
         if index is not None:
             column = self.columns[index]
@@ -752,19 +520,7 @@ class CyberTable():
                     counter += 1
             return counter       
 
-    ### Rows    
-    def add_row(self, row):
-        if self.last_row_index is None:
-            new_index = 0
-            self.last_row_index = 0
-        else:
-            new_index = self.last_row_index + 1
-            self.last_row_index += 1                
-        cleaned_row = replace_missing_with_nulls(row)
-        row_object = Row(new_index, cleaned_row)
-        self.rows[new_index] = row_object
-        self.row_count += 1
-    
+    ### Rows (Internal)
     def _internal_add_row(self, row:Row, index = None):       
         if index is not None:
             self.rows[index] = row
@@ -773,12 +529,7 @@ class CyberTable():
             new_index = self.last_row_index + 1
             self.rows[new_index] = row      
     
-    def update_row(self, row_index, updated_items):
-        row_object = self.rows[row_index]
-        row_object.items = updated_items
-        self.rows[row_index] = row_object
-    
-    def _internal_return_rows_by_value_recursive(self, input_rows:dict, column_indexes:list, values:list):
+    def _internal_return_rows_by_value_recursive(self, input_rows:dict, column_indexes:list, values:list) -> dict:
         if column_indexes == []:
             return input_rows
         
@@ -795,7 +546,25 @@ class CyberTable():
             return self._internal_return_rows_by_value_recursive(filtered_rows, [], [])
         else:
             return self._internal_return_rows_by_value_recursive(filtered_rows, column_indexes[1:], values[1:])
+    
+    ### Rows   
+    def add_row(self, row):
+        if self.last_row_index is None:
+            new_index = 0
+            self.last_row_index = 0
+        else:
+            new_index = self.last_row_index + 1
+            self.last_row_index += 1                
+        cleaned_row = replace_missing_with_nulls(row)
+        row_object = Row(new_index, cleaned_row)
+        self.rows[new_index] = row_object
+        self.row_count += 1
 
+    def update_row(self, row_index, updated_items):
+        row_object = self.rows[row_index]
+        row_object.items = updated_items
+        self.rows[row_index] = row_object
+    
     def remove_rows_by_column_value(self, value, column_index = None, column_name = None):
         set_index = None
         
@@ -830,13 +599,13 @@ class CyberTable():
             self.rows.pop(index)
             self.row_count -= 1
     
-    def return_row_items_by_index(self, index):
+    def return_row_items_by_index(self, index) -> list:
         if index in self.rows.keys():
             row_object = self.rows[index]
             return row_object.items
         raise ValueError(f"Row index {index} not found in list of known row indexes")
 
-    def return_sub_row_by_index(self, row_index, column_indexes = [], column_names = []):
+    def return_sub_row_by_index(self, row_index, column_indexes = [], column_names = []) -> list:
         if row_index not in self.rows.keys():
             raise ValueError(f"Row index {row_index} not found in list of row indexes")
         
@@ -860,7 +629,7 @@ class CyberTable():
             
         return sub_row
 
-    def return_distinct_column_values(self, column_index = None, column_name = None, include_nulls = False, sort = True):
+    def return_distinct_column_values(self, column_index = None, column_name = None, include_nulls = False, sort = True) -> list[list]:
         found_column_index = self.check_and_return_column_index(column_index = column_index, column_name = column_name)
         if found_column_index is not None:
             distinct_values = []
@@ -912,7 +681,7 @@ class CyberTable():
         self.rows = {}
         self.rows = new_dict      
 
-    def return_rows_as_lists(self):
+    def return_rows_as_lists(self) -> list[list]:
         return_list = []
         for row in self.rows.values():
             return_list.append(row.items)
@@ -942,7 +711,7 @@ class CyberTable():
             index += 1   
         self.column_count = len(self.columns) 
    
-    def check_and_return_column_index(self, column_index = None, column_name = None):
+    def check_and_return_column_index(self, column_index = None, column_name = None) -> int:
         index = None
         if column_index is not None:
             if column_index not in self.columns.keys():
@@ -955,8 +724,37 @@ class CyberTable():
             index = test_index
         return index
         
-    ### Selection   
-                       
+    ### Selection (Internal)              
+    def _internal_print_items(self, print_rows) -> str:
+        for print_row in print_rows:
+            string_list = []
+            for idx, column in self.columns.items():
+                value = print_row[idx]
+                padded = self._internal_modify_string_to_whitespace_padding(value, idx)
+                string_list.append(padded)               
+            
+            print(" | ".join(string_list))
+        return print_rows  
+    
+    def _internal_modify_string_to_whitespace_padding(self, input_value, index) -> str:
+        length_dict = self._internal_get_length_dict()
+        input_string = str(input_value)
+        input_length = len(input_string)
+        total_space = length_dict[index]
+        if input_length < total_space:
+            padding = total_space - input_length
+            return " " * int(padding / 2) + input_string + " " * int(padding / 2)
+        else:
+            return input_string
+    
+    def _internal_get_length_dict(self) -> dict:
+        spacing_dict = {}
+        for idx, column in self.columns.items():
+            length = len(column.name)
+            spacing_dict[idx] = length
+        return spacing_dict
+    
+    ### Secection
     def top(self, number):
         print(f"\nPrinting top {number} rows")
         columns = self.column_names()        
@@ -1016,34 +814,7 @@ class CyberTable():
         print_items = [row.items for row in self.rows.values()]        
         self._internal_print_items(print_items)
     
-    def _internal_print_items(self, print_rows):
-        for print_row in print_rows:
-            string_list = []
-            for idx, column in self.columns.items():
-                value = print_row[idx]
-                padded = self._internal_modify_string_to_whitespace_padding(value, idx)
-                string_list.append(padded)               
-            
-            print(" | ".join(string_list))
-        return print_rows   
-    
-    def _internal_modify_string_to_whitespace_padding(self, input_value, index):
-        length_dict = self._internal_get_length_dict()
-        input_string = str(input_value)
-        input_length = len(input_string)
-        total_space = length_dict[index]
-        if input_length < total_space:
-            padding = total_space - input_length
-            return " " * int(padding / 2) + input_string + " " * int(padding / 2)
-        else:
-            return input_string
-    
-    def _internal_get_length_dict(self):
-        spacing_dict = {}
-        for idx, column in self.columns.items():
-            length = len(column.name)
-            spacing_dict[idx] = length
-        return spacing_dict
+    # SORTED TO HERE
     
     ### Calculations
     def return_max_value(self, column_index = None, column_name = None):
@@ -1586,7 +1357,10 @@ class CyberTable():
         
         for index in self.rows.keys():           
             sub_row = self.return_sub_row_by_index(index, found_indexes)  
-            new_cyber_table.add_row(sub_row)         
+            new_cyber_table.add_row(sub_row)     
+            
+        new_cyber_table.reset_column_indexes()
+        new_cyber_table.reset_row_indexes()    
         
         return new_cyber_table                 
             
@@ -1622,6 +1396,7 @@ class CyberTable():
             new_cyber_table._internal_add_row(row_object, idx)
             
         new_cyber_table.reset_row_indexes()
+        new_cyber_table.reset_column_indexes()
             
         return new_cyber_table        
         
@@ -1832,6 +1607,239 @@ class CyberTable():
         aggregate_table = groups.aggregate(reference_column_indexes=column_index_list, calculation_column_indexes=calculation_column_index_list, calculations=calculations)
         return aggregate_table       
        
+class CyberTableGroup():
+    def __init__(self):
+        self.table_count = 0
+        self.groups = []
+        self.columns = []
+        self.grouped_indexes = []
+        
+    def add_table(self, table, group_indexes = []):          
+        if self.grouped_indexes == []:
+            self.grouped_indexes = group_indexes
+            
+        if self.table_count == 0:
+            for idx, column in table.columns.items():
+                name = column.name
+                data_type = column.data_type
+                permissions = column.allow_analyse
+                
+                new_column = Column(name, idx, data_type)
+                new_column.allow_analyse = permissions                
+                self.columns.append(new_column)
+                
+            self.groups.append(table)
+            self.table_count += 1  
+        else:
+            result = self._internal_check_incoming_table(table)
+            if result == True:
+                self.groups.append(table)
+                self.table_count += 1  
+            else:
+                raise ValueError(f"Incoming table does not match the column schema of the group column list")                      
+        
+    def return_tables(self) -> list:
+        return self.groups    
+    
+    def aggregate(self, reference_column_indexes = [], reference_column_names = [], calculation_column_indexes = [], calculation_column_names = [],  calculations = []):
+        options = ["sum", "mean", "mode", "median", "max", "min", "nulls", "non_nulls", "row_counts", "standard_deviation", "variance", "range", "true_percentage", "false_percentage"]      
+                
+        for calculation in calculations:
+            if calculation not in options:
+                raise KeyError(f"Input option {calculation} not in list of approved options: {options}")
+            
+        column_index_list = []
+        calculation_column_index_list = []
+        
+        column_indexes = [column_object.index for column_object in self.columns]
+        
+        if reference_column_indexes != []:
+            for index in reference_column_indexes:
+                
+                if index not in column_indexes:
+                    raise ValueError(f"Input index {index} not in list of known column indexes")
+                else:
+                    column_index_list.append(index)
+                
+        elif reference_column_names != []:
+            for reference_name in reference_column_names:
+                found = False
+                for column in self.columns:
+                    name = column.name            
+                    if name == reference_name:
+                        found = True
+                        column_index_list.append(idx)
+                        break
+                if found == False:
+                    raise KeyError(f"Column name {reference_name} not found in list of known column names")
+                
+        if calculation_column_indexes != []:
+            for index in calculation_column_indexes:
+                if index not in column_indexes:
+                    raise ValueError(f"Input index {index} not in list of known column indexes")
+                else:
+                    calculation_column_index_list.append(index)
+                
+        elif calculation_column_names != []:
+            for calculation_name in calculation_column_names:
+                found = False
+                for column in self.columns:
+                    name = column.name
+                    idx = column.index            
+                    if name == calculation_name:
+                        found = True
+                        column_index_list.append(idx)
+                        break
+                if found == False:
+                    raise KeyError(f"Column name {calculation_name} not found in list of known column names")               
+        
+        if len(calculation_column_index_list) != len(calculations):
+            raise KeyError(f"Count of columns {len(calculation_column_index_list)} does not match the number of calculations {len(calculations)}")
+        for index in column_index_list:
+            if index in calculation_column_index_list:
+                raise KeyError(f"Reference columns cannot also be calculation columns, they bust be distinctly separate")            
+        
+        aggregate_cybertable = CyberTable()
+        
+        for idx in column_index_list:
+            name = self.columns[idx].name
+            aggregate_cybertable._internal_add_column(name)
+            
+        for idx in range(len(calculation_column_index_list)):
+            calculation_column_index = calculation_column_index_list[idx]
+            calculation = calculations[idx]
+            new_name = self.columns[calculation_column_index].name + "_" + calculation           
+            aggregate_cybertable._internal_add_column(new_name)
+
+        row_index = 0
+        for table in self.groups:
+            aggregate_row = []
+            top_row = table.rows[0]
+            items = top_row.items
+            
+            for reference in column_index_list:
+                aggregate_row.append(items[reference])
+                
+            for iteration in range(len(calculation_column_index_list)):
+                calculation_idx = calculation_column_index_list[iteration]
+                calculation = calculations[iteration]
+                
+                if calculation == "min":
+                    min = table.return_min_value(calculation_idx)
+                    aggregate_row.append(min)                
+                elif calculation == "max":
+                    max = table.return_max_value(calculation_idx)
+                    aggregate_row.append(max)
+                elif calculation == "nulls":
+                    nulls = table.return_null_count(calculation_idx)
+                    aggregate_row.append(nulls)
+                elif calculation == "non_nulls":
+                    non_nulls = table.return_non_null_count(calculation_idx)
+                    aggregate_row.append(non_nulls)
+                elif calculation == "mean":
+                    mean = table.return_mean(calculation_idx)
+                    aggregate_row.append(mean)
+                elif calculation == "median":
+                    median = table.return_median(calculation_idx)
+                    aggregate_row.append(median)
+                elif calculation == "mode":
+                    mode = table.return_mode(calculation_idx)
+                    aggregate_row.append(mode[0])
+                elif calculation == "sum":
+                    sum = table.return_sum(calculation_idx)
+                    aggregate_row.append(sum)
+                elif calculation == "row_counts":
+                    aggregate_row.append(table.row_count)
+                elif calculation == "standard_deviation":
+                    std = table.return_standard_deviation(calculation_idx)
+                    aggregate_row.append(std)
+                elif calculation == "variance":
+                    var = table.return_variance(calculation_idx)
+                    aggregate_row.append(var)
+                elif calculation == "range":
+                    value_range = table.return_range(calculation_idx)
+                    aggregate_row.append(value_range)
+                elif calculation == "true_percentage":
+                    true_count = table.return_true_count_from_column(calculation_idx)
+                    false_count = table.return_false_count_from_column(calculation_idx)
+                    total_values = true_count + false_count
+                    percent = (true_count / total_values) * 100
+                    aggregate_row.append(percent)
+                elif calculation == "false_percentage":
+                    false_count = table.return_false_count_from_column(calculation_idx)
+                    true_count = table.return_true_count_from_column(calculation_idx)
+                    total_values = true_count + false_count
+                    percent = (false_count / total_values) * 100
+                    aggregate_row.append(percent)
+                
+            new_row = Row(row_index, aggregate_row)            
+            aggregate_cybertable._internal_add_row(new_row, row_index)
+            row_index += 1
+            
+        aggregate_cybertable.analyse_columns()
+        return aggregate_cybertable
+              
+    def add_batch_row_calculations(self, g_reference_column_index = None, g_reference_column_name = None, g_calculation = None, g_calculation_value = None):
+        if self.table_count == 0:
+            raise IndexError(f"There are no tables in the group")        
+        for table in self.groups:
+            table.add_calculation_column(reference_column_index = g_reference_column_index, reference_column_name = g_reference_column_name, calculation = g_calculation, calculation_value = g_calculation_value)
+    
+    def _internal_check_incoming_table(self, table):
+        for idx, column in table.columns.items():
+            name = column.name
+            data_type = column.data_type
+            
+            list_index = None
+            for column in self.columns:
+                column_index = column.index
+                if column_index == idx:
+                    list_index = column_index
+                    break
+            
+            if list_index is None:
+                raise KeyError(f"Incoming table column indexes do not match the first table in the group")
+            
+            existing_column = self.columns[idx]
+            existing_name = existing_column.name
+            existing_data_type = existing_column.data_type
+            
+            if existing_name != name:
+                raise KeyError(f"Incoming table column name {name} at index {idx} from new table does not match the column name {existing_name} from the group columns")
+            if existing_data_type != data_type:
+                raise KeyError(f"Incoming table column {name} data type of {data_type} does not match the existing data type {existing_data_type} from the group column of the same name")
+        return True
+        
+    def merge_into_cyber_table(self):
+        new_table = CyberTable()     
+        
+        for column in self.columns:
+            new_table._internal_add_column(column)
+            
+        for table in self.groups:
+            for row in table.rows.values():
+                new_table.add_row(row.items)
+                
+        return new_table
+    
+    def top(self, number):
+        if self.table_count == 0:
+            raise IndexError(f"There are no tables in the group")
+        for table in self.groups:
+            table.top(number)
+            
+    def bottom(self, number):
+        if self.table_count == 0:
+            raise IndexError(f"There are no tables in the group")
+        for table in self.groups:
+            table.bottom(number)
+            
+    def random_selection(self, number):
+        if self.table_count == 0:
+            raise IndexError(f"There are no tables in the group")
+        for table in self.groups:
+            table.random_selection(number)
+       
 # Normal Functions    
 def wait(message = None):
     if message == None:
@@ -1913,6 +1921,10 @@ def convert_iso_8601_to_datetime(input):
     if "Z" not in input_string or "T" not in input_string:
         raise ValueError(f"Input: {input} doesn't appear to be ISO 8601")
     input_string = input_string.replace("T", " ").replace("Z", "")
+    
+    if len(input_string) == 23:
+            input_string = input_string[:19]
+
     try:
         new_value = datetime.strptime(input_string, "%Y-%m-%d %H:%M:%S")
         return new_value
