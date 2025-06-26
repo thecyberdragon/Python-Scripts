@@ -2026,9 +2026,9 @@ def open_csv(file, delimiter = ",") -> CyberTable:
                 
                     if value.startswith("\"") == True and value.endswith("\"") == False:
                         building = True
-                        builder_string = value + ","
+                        builder_string = value[1:] + ","
                     elif value.startswith("\"") == False and value.endswith("\"") and building == True:
-                        builder_string += value
+                        builder_string += value[:-1]
                         building = False
                     elif building == True:
                         builder_string += value + ","
