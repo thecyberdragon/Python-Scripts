@@ -278,8 +278,15 @@ class CyberTable():
     def _internal_is_column_iso_8601(self, column_index):
         index = self.check_and_return_column_index(column_index)
         values = self.return_column_data(index)
+        
+        data_type = self.columns[index].data_type
+        name = self.columns[index].name
+        
+        if data_type == "NULL":
+            return False        
+        
         for value in values:
-            if value != "NULL":
+            if value != "NULL":                
                 is_8601 = is_iso_8601(value)
                 if is_8601 == False:
                     return False
@@ -1992,11 +1999,11 @@ def open_csv(file, delimiter = ",") -> CyberTable:
         cyber_table = CyberTable()
         
         # Open the file and read the lines using the delimiter
-        with open(file, "r") as open_file:
+        with open(file, "r", encoding="utf-8") as open_file:
             lines = open_file.readlines()           
             column_line = lines[0].rstrip("\n") 
-            columns = column_line.split(delimiter)
-
+            columns = column_line.split(delimiter)   
+                    
             # Add column objects to the table
             index = 0
             for column in columns:                
@@ -2009,7 +2016,30 @@ def open_csv(file, delimiter = ",") -> CyberTable:
                 line_string = line.rstrip("\n")
                 line_string = line_string.replace(",,", ",NULL,")
                 line_list = line_string.split(delimiter) 
-                cyber_table.add_row(line_list)
+                
+                values_corrected = []
+                building = False
+                builder_string = ""
+            
+                for idx in range(len(line_list)):
+                    value = line_list[idx]                
+                
+                    if value.startswith("\"") == True and value.endswith("\"") == False:
+                        building = True
+                        builder_string = value + ","
+                    elif value.startswith("\"") == False and value.endswith("\"") and building == True:
+                        builder_string += value
+                        building = False
+                    elif building == True:
+                        builder_string += value + ","
+                        
+                    if building == False and builder_string == "":
+                        values_corrected.append(value)
+                    elif building == False and builder_string != "":
+                        values_corrected.append(builder_string)
+                        builder_string = ""               
+                    
+                cyber_table.add_row(values_corrected)
                 
         # Detect data types
         cyber_table.analyse_columns()    
@@ -2020,8 +2050,8 @@ def open_csv(file, delimiter = ",") -> CyberTable:
         return None
     
 def round_trip_csv(file, delimiter = ",", convert_iso_8601 = True):
-    file_only = str(file).split("\\")[-1].split(".")[0]
-    new_file = file_only + "_cleaned.csv"
+    file_only = str(file).split("\\")[-1][:-4]
+    new_file = file_only + "_cleaned"
     
     file_len = len(file_only) + 4
     dir_len = len(file) - file_len
@@ -2031,9 +2061,8 @@ def round_trip_csv(file, delimiter = ",", convert_iso_8601 = True):
     
     if convert_iso_8601 == True:
         for key in cyber_table.columns.keys():
-            is_8601 = cyber_table._internal_is_column_iso_8601(key)
+            is_8601 = cyber_table._internal_is_column_iso_8601(key)            
             if is_8601 == True:
                 cyber_table.convert_iso_8601_string_to_datetime(key)
                 
     cyber_table.save_as_csv(directory, new_file, delimiter=delimiter)
-
