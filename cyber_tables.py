@@ -258,6 +258,33 @@ class CyberTable():
                         self.update_row(row_index, row_data)
                         return
        
+    def _internal_validate_return_column_indexes(self, column_indexes = [], column_names = [], raise_error = True) -> list:
+        index_list = []
+        if column_indexes != []:
+            for index in column_indexes:
+                if index in self.columns.keys():
+                    index_list.append(index)
+                else:
+                    if raise_error == True: raise KeyError(f"Index {index} not in list of known column indexes")
+        elif column_names != []:
+            for name in column_names:
+                index = self.return_column_index_by_name(name)
+                if index is not None:
+                    index_list.append(index)
+                else:
+                    if raise_error == True: raise KeyError(f"Column name {name} not in list of known column names")
+        return index_list
+     
+    def _internal_is_column_iso_8601(self, column_index):
+        index = self.check_and_return_column_index(column_index)
+        values = self.return_column_data(index)
+        for value in values:
+            if value != "NULL":
+                is_8601 = is_iso_8601(value)
+                if is_8601 == False:
+                    return False
+        return True
+    
     ### Columnns
     def update_column_name(self, new_column_name, column_index = None, column_name = None):
         if column_index is not None:
@@ -814,15 +841,7 @@ class CyberTable():
         print_items = [row.items for row in self.rows.values()]        
         self._internal_print_items(print_items)
     
-    # SORTED TO HERE
-    
-    ### Calculations
-    def return_max_value(self, column_index = None, column_name = None):
-        return self._internal_return_min_max_value("max", column_index = column_index, column_name = column_name)        
-        
-    def return_min_value(self, column_index = None, column_name = None):
-        return self._internal_return_min_max_value("min", column_index = column_index, column_name = column_name)
-    
+    ### Calculations (Internal)    
     def _internal_return_min_max_value(self, mode, column_index = None, column_name = None):
         if column_index is not None:
             if column_index not in self.columns.keys():
@@ -889,7 +908,14 @@ class CyberTable():
                 return last_max
             elif mode == "min":
                 return last_min 
-   
+    
+    ### Calculations
+    def return_max_value(self, column_index = None, column_name = None):
+        return self._internal_return_min_max_value("max", column_index = column_index, column_name = column_name)        
+        
+    def return_min_value(self, column_index = None, column_name = None):
+        return self._internal_return_min_max_value("min", column_index = column_index, column_name = column_name)
+    
     def return_range(self, column_index = None, column_name = None):
         min = self.return_min_value(column_index=column_index, column_name=column_name)
         max = self.return_max_value(column_index=column_index, column_name=column_name)
@@ -1000,14 +1026,14 @@ class CyberTable():
             if dtype is bool:
                 raise ValueError("Cannot return the mean value of a bool column")
         
-    def return_null_count(self, column_index = None, column_name = None):
+    def return_null_count(self, column_index = None, column_name = None) -> int:
         index = self.check_and_return_column_index(column_index, column_name)
         if index is not None:
             values = self.return_column_data(index)
             nulls = [value for value in values if value == "NULL"]
             return len(nulls)
         
-    def return_non_null_count(self, column_index = None, column_name = None):
+    def return_non_null_count(self, column_index = None, column_name = None) -> int:
         index = self.check_and_return_column_index(column_index, column_name)
         if index is not None:
             values = self.return_column_data(index)
@@ -1039,6 +1065,7 @@ class CyberTable():
         variance = self.return_variance(found_column_index)
         return variance ** 0.5          
   
+    ### Calculation Columns
     def add_calculation_column(self, reference_column_index = None, reference_column_name = None, calculation = None, calculation_value = None):
         options = ["ntile", "rank", "individual_std", "individual_variance", "row_number", "+ days", "- days", "above_threshold_percent", "below_threshold_percent"]
         
@@ -1334,7 +1361,7 @@ class CyberTable():
         return removals, index_list   
   
     ### Sub Tables             
-    def return_sub_table_by_columns(self, column_indexes = [], column_names = []):
+    def return_sub_table_by_columns(self, column_indexes = [], column_names = []) -> 'CyberTable':
         found_indexes = []
         if column_indexes != []:
             for index in column_indexes:
@@ -1364,7 +1391,7 @@ class CyberTable():
         
         return new_cyber_table                 
             
-    def return_sub_table_by_row_filters(self, values:list , column_indexes = [], column_names = []):
+    def return_sub_table_by_row_filters(self, values:list , column_indexes = [], column_names = []) -> 'CyberTable':
         if values == []:
             raise ValueError(f"Number of input items is empty")
         
@@ -1486,6 +1513,7 @@ class CyberTable():
              
         return new_table
     
+    ### File Operations
     def save_as_csv(self, directory, file, delimiter = ","):
         if os.path.isdir(directory) == False:
             raise ValueError(f"Directory {directory} does not exist")
@@ -1504,8 +1532,31 @@ class CyberTable():
                 writer.write(delimiter.join(items))
                 writer.write("\n")
     
+    ### Grouping (Internal)
+    def _internal_return_sub_table_groups_recursive(self, tables:list, index_list):
+        
+        if len(index_list) == 0 or index_list is None:
+            #wait(f"Base case reached. Returning {len(tables)} tables")
+            return tables
+        
+        new_table_list = []
+        column_index = index_list[0]    
+        
+        for table in tables:            
+            distinct_values = table.return_distinct_column_values(column_index)
+            for value in distinct_values:
+                new_table = table.return_sub_table_by_row_filters(values=[value], column_indexes = [column_index])
+                new_table_list.append(new_table)
+                
+        if len(index_list) == 1:
+            new_index_list = []
+        else:
+            new_index_list = index_list[1:]
+            
+        return self._internal_return_sub_table_groups_recursive(new_table_list, new_index_list)
+    
     ### Grouping
-    def return_groups(self, column_indexes = [], column_names = []):
+    def return_groups(self, column_indexes = [], column_names = []) -> 'CyberTableGroup':
         approved_indexes = []
         
         if column_indexes != []:
@@ -1531,30 +1582,8 @@ class CyberTable():
             table_group.add_table(table, approved_indexes)
             
         return table_group
-       
-    def _internal_return_sub_table_groups_recursive(self, tables:list, index_list):
-        
-        if len(index_list) == 0 or index_list is None:
-            #wait(f"Base case reached. Returning {len(tables)} tables")
-            return tables
-        
-        new_table_list = []
-        column_index = index_list[0]    
-        
-        for table in tables:            
-            distinct_values = table.return_distinct_column_values(column_index)
-            for value in distinct_values:
-                new_table = table.return_sub_table_by_row_filters(values=[value], column_indexes = [column_index])
-                new_table_list.append(new_table)
-                
-        if len(index_list) == 1:
-            new_index_list = []
-        else:
-            new_index_list = index_list[1:]
-            
-        return self._internal_return_sub_table_groups_recursive(new_table_list, new_index_list)
-             
-    def aggregate(self, reference_column_indexes = [], reference_column_names = [], calculation_column_indexes = [], calculation_column_names = [], calculations = []):
+      
+    def aggregate(self, reference_column_indexes = [], reference_column_names = [], calculation_column_indexes = [], calculation_column_names = [], calculations = []) -> 'CyberTable':
        
         column_index_list = []
         calculation_column_index_list = []
@@ -1607,6 +1636,7 @@ class CyberTable():
         aggregate_table = groups.aggregate(reference_column_indexes=column_index_list, calculation_column_indexes=calculation_column_index_list, calculations=calculations)
         return aggregate_table       
        
+       
 class CyberTableGroup():
     def __init__(self):
         self.table_count = 0
@@ -1614,6 +1644,33 @@ class CyberTableGroup():
         self.columns = []
         self.grouped_indexes = []
         
+    ### Internal
+    def _internal_check_incoming_table(self, table):
+        for idx, column in table.columns.items():
+            name = column.name
+            data_type = column.data_type
+            
+            list_index = None
+            for column in self.columns:
+                column_index = column.index
+                if column_index == idx:
+                    list_index = column_index
+                    break
+            
+            if list_index is None:
+                raise KeyError(f"Incoming table column indexes do not match the first table in the group")
+            
+            existing_column = self.columns[idx]
+            existing_name = existing_column.name
+            existing_data_type = existing_column.data_type
+            
+            if existing_name != name:
+                raise KeyError(f"Incoming table column name {name} at index {idx} from new table does not match the column name {existing_name} from the group columns")
+            if existing_data_type != data_type:
+                raise KeyError(f"Incoming table column {name} data type of {data_type} does not match the existing data type {existing_data_type} from the group column of the same name")
+        return True
+    
+    ### Normal Functions
     def add_table(self, table, group_indexes = []):          
         if self.grouped_indexes == []:
             self.grouped_indexes = group_indexes
@@ -1641,7 +1698,7 @@ class CyberTableGroup():
     def return_tables(self) -> list:
         return self.groups    
     
-    def aggregate(self, reference_column_indexes = [], reference_column_names = [], calculation_column_indexes = [], calculation_column_names = [],  calculations = []):
+    def aggregate(self, reference_column_indexes = [], reference_column_names = [], calculation_column_indexes = [], calculation_column_names = [],  calculations = []) -> CyberTable:
         options = ["sum", "mean", "mode", "median", "max", "min", "nulls", "non_nulls", "row_counts", "standard_deviation", "variance", "range", "true_percentage", "false_percentage"]      
                 
         for calculation in calculations:
@@ -1784,33 +1841,8 @@ class CyberTableGroup():
             raise IndexError(f"There are no tables in the group")        
         for table in self.groups:
             table.add_calculation_column(reference_column_index = g_reference_column_index, reference_column_name = g_reference_column_name, calculation = g_calculation, calculation_value = g_calculation_value)
-    
-    def _internal_check_incoming_table(self, table):
-        for idx, column in table.columns.items():
-            name = column.name
-            data_type = column.data_type
-            
-            list_index = None
-            for column in self.columns:
-                column_index = column.index
-                if column_index == idx:
-                    list_index = column_index
-                    break
-            
-            if list_index is None:
-                raise KeyError(f"Incoming table column indexes do not match the first table in the group")
-            
-            existing_column = self.columns[idx]
-            existing_name = existing_column.name
-            existing_data_type = existing_column.data_type
-            
-            if existing_name != name:
-                raise KeyError(f"Incoming table column name {name} at index {idx} from new table does not match the column name {existing_name} from the group columns")
-            if existing_data_type != data_type:
-                raise KeyError(f"Incoming table column {name} data type of {data_type} does not match the existing data type {existing_data_type} from the group column of the same name")
-        return True
-        
-    def merge_into_cyber_table(self):
+ 
+    def merge_into_cyber_table(self) -> CyberTable:
         new_table = CyberTable()     
         
         for column in self.columns:
@@ -1840,13 +1872,18 @@ class CyberTableGroup():
         for table in self.groups:
             table.random_selection(number)
        
-# Normal Functions    
+       
+       
+# Normal Functions   
+
+### Debugging
 def wait(message = None):
     if message == None:
         input("waiting...")
     else:
         input(message)
     
+### Strings
 def convert_string_to_title_case(input):
     return_chars = []
     string_input = str(input)
@@ -1862,7 +1899,29 @@ def convert_string_to_title_case(input):
             return_chars.append(str(char).lower())
             last_char = char
     return "".join(return_chars)
+  
+def string_to_bool(input):
+    if is_bool(input) == True:
+        lower = str(input).lower()
+        if lower == "true": return True
+        elif lower == "false": return False
+       
+def convert_iso_8601_to_datetime(input):
+    input_string = str(input)
+    if "Z" not in input_string or "T" not in input_string:
+        raise ValueError(f"Input: {input} doesn't appear to be ISO 8601")
+    input_string = input_string.replace("T", " ").replace("Z", "")
     
+    if len(input_string) == 23:
+            input_string = input_string[:19]
+
+    try:
+        new_value = datetime.strptime(input_string, "%Y-%m-%d %H:%M:%S")
+        return new_value
+    except:
+        raise ValueError(f"Input: {input_string} is not a datetime in format yyyy-mm-dd hh:mm:ss")      
+          
+### Data type checks
 def is_int(input):
     if "." in str(input):
         return False
@@ -1886,12 +1945,6 @@ def is_bool(input):
         return True
     return False
 
-def string_to_bool(input):
-    if is_bool(input) == True:
-        lower = str(input).lower()
-        if lower == "true": return True
-        elif lower == "false": return False
-
 def is_date(input):
     input_string = str(input)
     try:
@@ -1907,7 +1960,22 @@ def is_datetime(input):
         return True
     except:
         return False
-        
+    
+def is_iso_8601(input):
+    
+    if type(input) is not str:
+        return False
+    
+    length = len(input)
+    if length == 24 and input[4] == "-" and input[7] == "-" and input[10] == "T" and input[13] == ":" and input[16] == ":" and input[19] == "." and input[-1] == "Z":
+            try:
+                datetime_value = convert_iso_8601_to_datetime(input)
+                return True
+            except:
+                return False
+    return False
+
+### Nulls    
 def replace_missing_with_nulls(input_list:list):
         return_list = []
         for item in input_list:
@@ -1916,21 +1984,7 @@ def replace_missing_with_nulls(input_list:list):
             else: return_list.append(item)
         return return_list
     
-def convert_iso_8601_to_datetime(input):
-    input_string = str(input)
-    if "Z" not in input_string or "T" not in input_string:
-        raise ValueError(f"Input: {input} doesn't appear to be ISO 8601")
-    input_string = input_string.replace("T", " ").replace("Z", "")
-    
-    if len(input_string) == 23:
-            input_string = input_string[:19]
-
-    try:
-        new_value = datetime.strptime(input_string, "%Y-%m-%d %H:%M:%S")
-        return new_value
-    except:
-        raise ValueError(f"Input: {input_string} is not a datetime in format yyyy-mm-dd hh:mm:ss")
-    
+### File operations
 def open_csv(file, delimiter = ",") -> CyberTable:
     
     if os.path.exists(file):
@@ -1965,5 +2019,21 @@ def open_csv(file, delimiter = ",") -> CyberTable:
     else:
         return None
     
-
+def round_trip_csv(file, delimiter = ",", convert_iso_8601 = True):
+    file_only = str(file).split("\\")[-1].split(".")[0]
+    new_file = file_only + "_cleaned.csv"
+    
+    file_len = len(file_only) + 4
+    dir_len = len(file) - file_len
+    directory = file[:dir_len - 1]
+    
+    cyber_table = open_csv(file, delimiter = delimiter)
+    
+    if convert_iso_8601 == True:
+        for key in cyber_table.columns.keys():
+            is_8601 = cyber_table._internal_is_column_iso_8601(key)
+            if is_8601 == True:
+                cyber_table.convert_iso_8601_string_to_datetime(key)
+                
+    cyber_table.save_as_csv(directory, new_file, delimiter=delimiter)
 
