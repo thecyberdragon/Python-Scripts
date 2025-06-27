@@ -87,29 +87,52 @@ Updating columns
 ```Python
 # Update column name
 cyber_table.update_column_name(new_column_name, column_index = n, column_name = "name")
+
+# Lock the data type of a column so that analyse_columns ignores it
 cyber_table.lock_column_data_type(column_index = n, column_name = "name")
+
+# Unlock the data type of a column so that analyse_columns doesn't ignore it
 cyber_table.unlock_column_data_type(column_index = n, column_name = "name")
-cyber_table.change_column_data_type(new_data_type, column_index = n, column_name = "name")
+
+# Change the column data type (reference the options at the top of this page). Much be compatible with the conversion to said data type.
+cyber_table.change_column_data_type("data_type", column_index = n, column_name = "name")
+
+# Analyse columns and prescribe data types automatically where the column data types aren't locked
 cyber_table.analyse_columns(column_index = n, column_name = "name")
+
+# Update the data in a column using a list. The list must equal the number of rows in the table and be in update order
 cyber_table.update_data_in_column(data:list, column_index = None, column_name = "name", auto_analyse = True/False)
 ```
 
 Removing columns or values by column
 ```Python
+# Remove a column
 cyber_table.remove_column(index = n, name = "name") -> Column
+
+# Remove data from all rows in a column's position, popping all items in all rows removing that column from the data.
 cyber_table.remove_row_data_by_column_index(n)
 ```
 
 Returning column values
 ```Python
+# Return the index of a column using the name. Returns as None if the name is not found.
 cyber_table.return_column_index_by_name("name") -> int
+
+# Returns all column data as a list
 cyber_table.return_column_data(column_index = n, column_name = "name", include_nulls = True/False) -> list
-cyber_table.return_column_object_by_index("name") -> Column
+
+# Returns the object of a column using the index
+cyber_table.return_column_object_by_index(n) -> Column
+
+# Returns a count of all True values in a bool column
 cyber_table.return_true_count_from_column(column_index = n, column_name = "name") -> int
+
+# Returns a count of all False values in a bool column
 cyber_table.return_false_count_from_column(column_index = n, column_name = "name") -> int
 ```
 
 Returning values based on a column
 ```Python
+# Returns a new cyber_table where all rows in the column index = "NULL"
 cyber_table.return_table_by_nulls_in_column(column_index = n, column_name = "name")
 ```
