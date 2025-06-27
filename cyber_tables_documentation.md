@@ -203,7 +203,7 @@ new_table = cyber_table.return_sub_table_by_columns(column_indexes = [], column_
 
 # Return a cub table where items in the values list occur within select columns. All conditions must be true for a row to be returned.
 # For example, values = [1, 2], column_indexes = [4, 7] would return a sub table for all rows where column index 4 = 1, and column index 7 = 2. 
-new_table = cyber_table.return_sub_table_by_row_filters(self, values:list , column_indexes = [], column_names = []) -> 'CyberTable'
+new_table = cyber_table.return_sub_table_by_row_filters(self, values:list , column_indexes = [], column_names = []) -> CyberTable
 ```
 
 ### Returning calculations
@@ -266,7 +266,14 @@ cyber_table.return_standard_deviation(column_index = n, column_name = "name")
 ### String functions
 
 ```Python
-cyber_table.clean_string_column(self, column_index = None, column_name = None, capital_first_letter = True)
-cyber_table.set_column_string_case(self, case, column_index = None, column_name = None)
-cyber_table.convert_iso_8601_string_to_datetime(self, column_index = None, column_name = None)
+# Clean a string column by removing white space and optionally capitalising the first letter
+cyber_table.clean_string_column(column_index = n, column_name = "name", capital_first_letter = True/False)
+
+# Set the case of a string
+# Options: lower, upper, title, lower_snake, upper_snake, title_snake
+cyber_table.set_column_string_case(case, column_index = n, column_name = "name")
+
+# Check and convert any ISO 8601 date time values to a normal datetime and change the data type
+# Example os ISO 8601: 2025-06-27T12:01:05.142Z
+cyber_table.convert_iso_8601_string_to_datetime(column_index = n, column_name = "name")
 ```
