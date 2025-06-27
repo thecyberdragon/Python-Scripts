@@ -51,3 +51,12 @@ cyber_tables.random_selection(n)
 # View all rows in a table - Careful for large tables
 cyber_tables.print()
 ```
+
+### Viewing table properties
+```Python
+# Print all columns indexes, names, and data types
+cyber_table.print_columns()
+
+# Prints the above plus information plus the number of columns in the list, in the count property, how many rows there are and the row count property
+cyber_table.print_structure()
+```
