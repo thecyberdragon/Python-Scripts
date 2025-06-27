@@ -198,12 +198,13 @@ cyber_table.order_rows_by_column(column_index = n, column_name = "name", mode = 
 ```
 
 ### Handling duplicates
+Both dunctions return the number of indexes removed and a list of those indexes.
 ```Python
 # Remove duplicate rows
-cyber_table.remove_duplicate_rows()
+cyber_table.remove_duplicate_rows() -> int, list[int]
 
 # Remove duplicates within a selection of columns
-cyber_table.remove_duplicate_rows_by_columns(column_indexes = [], column_names = [])
+cyber_table.remove_duplicate_rows_by_columns(column_indexes = [], column_names = []) -> int, list[int]
 ```
 
 ### Returning sub tables
