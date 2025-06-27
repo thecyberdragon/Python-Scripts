@@ -290,8 +290,8 @@ cyber_table.add_calculation_column(reference_column_index = n, reference_column_
 - individual_variance: gives each row a variance value based on the reference column
 - individual_std: gives each row a standard deviation value based on the reference column
 - row_number: gives each row a number top to bottom in default order
-- + days: adds n days from a date or datetime based on the value given in the calculation_value argument
-- - days: subtracts n days from a date or datetime based on the value given in the calculation_value argument
+- \+ days: adds n days from a date or datetime based on the value given in the calculation_value argument
+- \- days: subtracts n days from a date or datetime based on the value given in the calculation_value argument
 - above_theshold_percent: gives each row a True or False value if the reference column falls in the top n percent given in the calculation_value argument
 - below_threshold_percent: gives each row a True or False value if the reference column falls in the bottom n percent given in the calculation_value argument
 
