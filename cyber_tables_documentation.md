@@ -61,3 +61,55 @@ cyber_table.print_columns()
 # Prints the above plus information plus the number of columns in the list, in the count property, how many rows there are and the row count property
 cyber_table.print_structure()
 ```
+
+### Indexes
+In cyber_tables, indexes are the identifier in the dictionary within the table obejct to track the columns and rows. Indexes are unique, but may change if you morify the table by adding or removing columns or rows. Because of this, you should always check the indexes before using an index in a function call. When you create tables and sub-tables, the indexes get reset. 
+
+```Python
+# Reset column indexes manually
+cyber_table.reset_column_indexes()
+
+# Reset row indexes manually
+cyber_table.reset_row_indexes()
+```
+
+### Function calls
+As a general guide, when calling a function that needs a column or row reference, you will always have the option to use the column index(es) or the column name(s). In any situation whereby this choice is presented, if any indexes are given, those arguments will be prioritised and the names ignored. When referencing a column, either use the index(es) or the name(s), not a combination of both. 
+
+### Columns
+Adding columns
+```Python
+cyber_table.insert_column(self, name) -> int
+cyber_table.insert_column_with_data(self, name:str, data:list, auto_analyse = True)
+```
+
+Updating columns
+```Python
+# Update column name
+cyber_table.update_column_name(new_column_name, column_index = n, column_name = "name")
+cyber_table.lock_column_data_type(column_index = n, column_name = "name")
+cyber_table.unlock_column_data_type(column_index = n, column_name = "name")
+cyber_table.change_column_data_type(new_data_type, column_index = n, column_name = "name")
+cyber_table.analyse_columns(column_index = n, column_name = "name")
+cyber_table.update_data_in_column(data:list, column_index = None, column_name = "name", auto_analyse = True/False)
+```
+
+Removing columns or values by column
+```Python
+cyber_table.remove_column(index = n, name = "name") -> Column
+cyber_table.remove_row_data_by_column_index(n)
+```
+
+Returning column values
+```Python
+cyber_table.return_column_index_by_name("name") -> int
+cyber_table.return_column_data(column_index = n, column_name = "name", include_nulls = True/False) -> list
+cyber_table.return_column_object_by_index("name") -> Column
+cyber_table.return_true_count_from_column(column_index = n, column_name = "name") -> int
+cyber_table.return_false_count_from_column(column_index = n, column_name = "name") -> int
+```
+
+Returning values based on a column
+```Python
+cyber_table.return_table_by_nulls_in_column(column_index = n, column_name = "name")
+```
