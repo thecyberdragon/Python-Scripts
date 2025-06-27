@@ -185,3 +185,60 @@ Ordering rows
 # You can order the table alphanumerically based on the values in a specific column
 cyber_table.order_rows_by_column(column_index = n, column_name = "name", mode = "asc"/"desc")
 ```
+
+### Returning calculations
+Minimum, maximum and range. 
+```Python
+# Return the maximum value
+# Accepted data types: string, int, decimal, bool, date, datetime
+cyber_table.return_max_value(column_index = n, column_name = "name")
+
+# Return the minimum value
+# Accepted data types: string, int, decimal, bool, date, datetime
+cyber_table.return_min_value(column_index = n, column_name = "name")
+
+# Return the range between the minimum and maximum value
+# Accepted data types: string, int, decimal, bool, date, datetime
+cyber_table.return_range(column_index = n, column_name = "name")
+```
+
+Average calculations
+```Python
+# Return the mean
+# Accepted data types: int, decimal, string
+cyber_table.return_mean(column_index = n, column_name = "name")
+
+# Return the median
+# Accepted data types: int, decimal, string, date, datetime
+cyber_table.return_median(column_index = n, column_name = "name")
+
+# Return the mode
+# Accepted data types: int, decimal, string, date, datetime, bool
+cyber_table.return_mode(column_index = n, column_name = "name")
+```
+
+Sum calculations
+```Python
+# Return the sum
+# Accepted data types: int, decimal
+cyber_table.return_sum(column_index = n, column_name = "name")
+
+# Return a count of all "NULL" values
+# Accepted data types: int, decimal, string, date, datetime, bool, NULL
+cyber_table.return_null_count(column_index = n, column_name = "name") -> int
+
+# Return a counf of all non-"NULL" values
+# Accepted data types: int, decimal, string, date, datetime, bool, NULL
+cyber_table.return_non_null_count(column_index = n, column_name = "name") -> int
+```
+
+Statistics
+```Python
+# Return the variance
+# Accepted data types: int, decimal
+cyber_table.return_variance(column_index = n, column_name = "name")
+
+# Returns the standard deviation
+# Accepted data types: int, decimal
+cyber_table.return_standard_deviation(column_index = n, column_name = "name")
+```
