@@ -46,9 +46,6 @@ new_table = cyber_table.return_copy()
 ```Python
 # Save a cyber table as a CSV in a directory with a specific name (do not include .csv)
 cyber_table.save_as_csv(directory, file_name, delimiter = ",")
-
-# Open a CSV, clean the strings of whitespace, replace empty values with NULL, convert ISO 8601 to date time and save as a _cleaned file
-round_trip_csv(file_path, delimiter=",", convert_iso_8601 = True/False)
 ```
 
 ### Viewing table data
