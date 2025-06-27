@@ -186,6 +186,26 @@ Ordering rows
 cyber_table.order_rows_by_column(column_index = n, column_name = "name", mode = "asc"/"desc")
 ```
 
+### Handling duplicates
+```Python
+# Remove duplicate rows
+cyber_table.remove_duplicate_rows()
+
+# Remove duplicates within a selection of columns
+cyber_table.remove_duplicate_rows_by_columns(column_indexes = [], column_names = [])
+```
+
+### Returning sub tables
+Sub tables are just a term of another CyberTable object that has a reduced column or row count compared to the original.
+```Python
+# Return a sub table with select columns from the original table
+new_table = cyber_table.return_sub_table_by_columns(column_indexes = [], column_names = []) -> CyberTable
+
+# Return a cub table where items in the values list occur within select columns. All conditions must be true for a row to be returned.
+# For example, values = [1, 2], column_indexes = [4, 7] would return a sub table for all rows where column index 4 = 1, and column index 7 = 2. 
+new_table = cyber_table.return_sub_table_by_row_filters(self, values:list , column_indexes = [], column_names = []) -> 'CyberTable'
+```
+
 ### Returning calculations
 Minimum, maximum and range. 
 ```Python
@@ -241,4 +261,12 @@ cyber_table.return_variance(column_index = n, column_name = "name")
 # Returns the standard deviation
 # Accepted data types: int, decimal
 cyber_table.return_standard_deviation(column_index = n, column_name = "name")
+```
+
+### String functions
+
+```Python
+cyber_table.clean_string_column(self, column_index = None, column_name = None, capital_first_letter = True)
+cyber_table.set_column_string_case(self, case, column_index = None, column_name = None)
+cyber_table.convert_iso_8601_string_to_datetime(self, column_index = None, column_name = None)
 ```
