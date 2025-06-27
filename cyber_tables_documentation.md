@@ -36,3 +36,18 @@ import cyber_tables
 cyber_table = open_csv("file_path", delimiter = ",")
 ```
 
+### Viewing table data
+Cyber tables provides four ways to view the data in your table.
+```Python
+# View the top n rows in the table
+cyber_table.top(n)
+
+# View the bottom n rows in the table
+cyber_tables.bottom(n)
+
+# View a random n selection of rows in the table
+cyber_tables.random_selection(n)
+
+# View all rows in a table - Careful for large tables
+cyber_tables.print()
+```
