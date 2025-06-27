@@ -37,6 +37,20 @@ import cyber_tables
 cyber_table = open_csv("file_path", delimiter = ",")
 ```
 
+Return a copy of a table
+```Python
+new_table = cyber_table.return_copy()
+```
+
+### Saving a table as a CSV
+```Python
+# Save a cyber table as a CSV in a directory with a specific name (do not include .csv)
+cyber_table.save_as_csv(directory, file_name, delimiter = ",")
+
+# Open a CSV, clean the strings of whitespace, replace empty values with NULL, convert ISO 8601 to date time and save as a _cleaned file
+round_trip_csv(file_path, delimiter=",", convert_iso_8601 = True/False)
+```
+
 ### Viewing table data
 Cyber tables provides four ways to view the data in your table.
 ```Python
@@ -276,4 +290,18 @@ cyber_table.set_column_string_case(case, column_index = n, column_name = "name")
 # Check and convert any ISO 8601 date time values to a normal datetime and change the data type
 # Example os ISO 8601: 2025-06-27T12:01:05.142Z
 cyber_table.convert_iso_8601_string_to_datetime(column_index = n, column_name = "name")
+```
+
+### Grouping a table
+```Python
+# Return a CyberTableGroup object containing tables for every unique combination of values in the list of columns specified.
+# Example: column_indexes = [1, 2] will return an object containing a table for everyunique combination of values in column indexes 1 and 2.
+cyber_table.return_groups(column_indexes = [], column_names = []) -> CyberTableGroup
+```
+
+### Aggregating table data
+TBC
+```Python
+# Return a cyber table with aggregated data
+aggregated_table = cyber_table.aggregate(self, reference_column_indexes = [], reference_column_names = [], calculation_column_indexes = [], calculation_column_names = [], calculations = []) -> CyberTable
 ```
