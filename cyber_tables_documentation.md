@@ -23,4 +23,7 @@ Cyber tables is made up of four classes / objects:
 - datetime -> Date time values in the format YYYY-MM-DD HH:MM:SS
 
 ### Initialising a table
-
+Creating a new table object:
+```Python
+cyber_table = CyberTable()
+```
