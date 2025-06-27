@@ -129,10 +129,59 @@ cyber_table.return_true_count_from_column(column_index = n, column_name = "name"
 
 # Returns a count of all False values in a bool column
 cyber_table.return_false_count_from_column(column_index = n, column_name = "name") -> int
+
+# Return the column index based on the index or name if the column index/name exists
+cyber_table.check_and_return_column_index(column_index = n, column_name = "name") -> int
 ```
 
 Returning values based on a column
 ```Python
 # Returns a new cyber_table where all rows in the column index = "NULL"
 cyber_table.return_table_by_nulls_in_column(column_index = n, column_name = "name")
+```
+
+### Rows
+Adding rows
+```Python
+# Add a new row
+cyber_table.add_row(row:list)
+```
+
+Updating rows
+```Python
+# Update a row. The updated list must be the same length as the column count
+cyber_table.update_row(row_index, updated_items)
+```
+
+Removing rows
+```Python
+# Remove rows where the rows contain the value in argument one is present in a specific column
+cyber_table.remove_rows_by_column_value(value, column_index = n, column_name = "name")
+
+# Remove a row by the row index
+cyber_table.remove_row_by_index(self, index:int)
+```
+
+Returning row values
+```Python
+# Return the items of a row by the row index
+cyber_table.return_row_items_by_index(index:int) -> list
+
+# Return the rows in the table as a list of lists
+cyber_table.return_rows_as_lists() -> list[list]
+
+# Return a list of items in a row excluding columns not specified
+cyber_table.return_sub_row_by_index(row_index:int, column_indexes = [], column_names = []) -> list
+```
+
+Return values based on rows
+```Python
+# Return a list of all unique values in a column. "NULL" can be included or excluded, and you can optionally sort the list alphabetically
+cyber_table.return_distinct_column_values(column_index = n, column_name = "name", include_nulls = False/True, sort = True/False) -> list
+```
+
+Ordering rows
+```Python
+# You can order the table alphanumerically based on the values in a specific column
+cyber_table.order_rows_by_column(column_index = n, column_name = "name", mode = "asc"/"desc")
 ```
