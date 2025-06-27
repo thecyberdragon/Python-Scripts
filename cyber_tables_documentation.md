@@ -22,6 +22,12 @@ Cyber tables is made up of four classes / objects:
 - date -> Date values in the format YYYY-MM-DD
 - datetime -> Date time values in the format YYYY-MM-DD HH:MM:SS
 
+### Automatic cleaning
+Cyber tables provides a way to import a CSV, replace all empty values with NULL and optionally convert all ISO 8601 datetimes to a normal YYYY-MM-DD HH:MM:SS date time format. This function will output the CSV next to the original using the file name: filename_cleaned.csv.
+```Python
+round_trip_csv("file_path", delimiter = ",", convert_iso_8601 = True)
+```
+
 ### Initialising a table
 Opening a CSV as a cyber_table
 ```Python
