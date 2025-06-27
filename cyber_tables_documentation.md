@@ -5,6 +5,7 @@
 Cyber tables is a python module that aims to make importing and working with table data nice and easy with plain English syntax that works on logic similar to SQL. 
 The intention is to create something that can be an alternative to something like pandas and integrate some bespoke requirements at the same time.  
 Cyber tables is also free of non-native Python dependancies, allowing you to use it 'out of the box'.    
+In the cyber_tables code are numerous functions beginning with _internal, they are only to be used if you know what you're doing. They are designed to only be used by normally-named functions.    
 
 ### Structure
 Cyber tables is made up of four classes / objects:
