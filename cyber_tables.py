@@ -582,7 +582,7 @@ class CyberTable():
             return self._internal_return_rows_by_value_recursive(filtered_rows, column_indexes[1:], values[1:])
     
     ### Rows   
-    def add_row(self, row):
+    def add_row(self, row:list):
         if self.last_row_index is None:
             new_index = 0
             self.last_row_index = 0
@@ -628,18 +628,18 @@ class CyberTable():
             
         self.reset_row_indexes()
     
-    def remove_row_by_index(self, index):
+    def remove_row_by_index(self, index:int):
         if index in self.rows.keys():
             self.rows.pop(index)
             self.row_count -= 1
     
-    def return_row_items_by_index(self, index) -> list:
+    def return_row_items_by_index(self, index:int) -> list:
         if index in self.rows.keys():
             row_object = self.rows[index]
             return row_object.items
         raise ValueError(f"Row index {index} not found in list of known row indexes")
 
-    def return_sub_row_by_index(self, row_index, column_indexes = [], column_names = []) -> list:
+    def return_sub_row_by_index(self, row_index:int, column_indexes = [], column_names = []) -> list:
         if row_index not in self.rows.keys():
             raise ValueError(f"Row index {row_index} not found in list of row indexes")
         
@@ -663,7 +663,7 @@ class CyberTable():
             
         return sub_row
 
-    def return_distinct_column_values(self, column_index = None, column_name = None, include_nulls = False, sort = True) -> list[list]:
+    def return_distinct_column_values(self, column_index = None, column_name = None, include_nulls = False, sort = True) -> list:
         found_column_index = self.check_and_return_column_index(column_index = column_index, column_name = column_name)
         if found_column_index is not None:
             distinct_values = []
