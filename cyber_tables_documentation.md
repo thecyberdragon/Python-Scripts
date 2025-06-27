@@ -23,7 +23,10 @@ Cyber tables is made up of four classes / objects:
 - datetime -> Date time values in the format YYYY-MM-DD HH:MM:SS
 
 ### Initialising a table
-Creating a new table object:
+Opening a CSV as a cyber_table
 ```Python
-cyber_table = CyberTable()
+import cyber_tables
+
+cyber_table = open_csv("file_path", delimiter = ",")
 ```
+
