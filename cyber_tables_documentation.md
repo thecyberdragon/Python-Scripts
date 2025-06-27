@@ -277,6 +277,24 @@ cyber_table.return_variance(column_index = n, column_name = "name")
 cyber_table.return_standard_deviation(column_index = n, column_name = "name")
 ```
 
+### Calculation columns
+calculation_column_options = ["ntile", "rank", "individual_std", "individual_variance", "row_number", "+ days", "- days", "above_threshold_percent", "below_threshold_percent"]
+
+```Python
+# Add a new column with a calculation on each row based on the reference column
+cyber_table.add_calculation_column(reference_column_index = n, reference_column_name = "name", calculation = None, calculation_value = None)
+```
+
+- ntile: give rows an ntile bucket based on the number of buckets specified in the calculation_value argument
+- rank: gives each row a rank based on the order minimum to maximum of the reference column
+- individual_variance: gives each row a variance value based on the reference column
+- individual_std: gives each row a standard deviation value based on the reference column
+- row_number: gives each row a number top to bottom in default order
+- + days: adds n days from a date or datetime based on the value given in the calculation_value argument
+- - days: subtracts n days from a date or datetime based on the value given in the calculation_value argument
+- above_theshold_percent: gives each row a True or False value if the reference column falls in the top n percent given in the calculation_value argument
+- below_threshold_percent: gives each row a True or False value if the reference column falls in the bottom n percent given in the calculation_value argument
+
 ### String functions
 
 ```Python
@@ -292,16 +310,92 @@ cyber_table.set_column_string_case(case, column_index = n, column_name = "name")
 cyber_table.convert_iso_8601_string_to_datetime(column_index = n, column_name = "name")
 ```
 
-### Grouping a table
+### Aggregating table data
+
+Aggregation calculation options = ["sum", "mean", "mode", "median", "max", "min", "nulls", "non_nulls", "row_counts", "standard_deviation", "variance", "range", "true_percentage", "false_percentage"]      
+
+The aggregate function will:
+- Create a CyberTableGroup containing tables of all unique values from the combination of reference coluns
+- Itterate through all columns in the calculation column list
+- Perform a calculation for the corresponding calculation in the list of calculations
+- Return a CyberTable consisting of all reference columns and the following calculations
+
+The count of calculation columns must match the count of calculations. 
+
+```Python
+# Return a cyber table with aggregated data
+aggregated_table = cyber_table.aggregate(reference_column_indexes = [], reference_column_names = [], calculation_column_indexes = [], calculation_column_names = [], calculations = []) -> CyberTable
+
+# Example -> By all unique values in columns 0 and 1, calculate the mean of column 4 and the sum of column 7
+aggregated_table = cyber_table.aggregate(reference_column_indexes = [0, 1],calculation_column_indexes = [4, 7], calculations = ["mean", "sum"])
+```
+Aggregation descriptions:
+- sum: add up all values
+- mean: calculates the mean 
+- median: calculates the median 
+- mode: calculates the mode
+- max: calculates the maximum value
+- min: calculates the minimum value
+- range: calculates the difference between the maximum and minimum values
+- nulls: calculates the number of "NULL" values
+- non_nulls: calculates the number of non-"NULL" values
+- row_counts: calculates the number of rows
+- variance: calculates the variance
+- standard_deviation: calculates standard deviation
+- true_percentage: calculates the percentage of non-"NULL" values that are True
+- false_percentage: calculates the percentage of non-"NULL" values that are False
+
+### CyberTableGroup
+You can crate a group object manually and then run functions on it for increased flexibility.
+
 ```Python
 # Return a CyberTableGroup object containing tables for every unique combination of values in the list of columns specified.
 # Example: column_indexes = [1, 2] will return an object containing a table for everyunique combination of values in column indexes 1 and 2.
-cyber_table.return_groups(column_indexes = [], column_names = []) -> CyberTableGroup
+cyber_group = cyber_table.return_groups(column_indexes = [], column_names = []) -> CyberTableGroup
+```
+Adding a table to the group
+```Python
+# Add a CyberTable object to the group, and specify which columns the table should be grouped by (must match the existing group)
+cyber_group.add_table(table, group_indexes = [])
 ```
 
-### Aggregating table data
-TBC
+Returning tables from a group
 ```Python
-# Return a cyber table with aggregated data
-aggregated_table = cyber_table.aggregate(self, reference_column_indexes = [], reference_column_names = [], calculation_column_indexes = [], calculation_column_names = [], calculations = []) -> CyberTable
+# Return tables as a list of CyberTable objects
+cyber_groups.return_tables()
+```
+
+Merge into CyberTable object
+```Python
+cyber_table = cyber_groups.merge_into_cyber_table()
+```
+
+View items in all tables
+```Python
+# Return the top n rows of all tables
+cyber_groups.top(n)
+
+# Return the bottom n rows of all tables
+cyber_groups.bottom(n)
+
+# Return a random selection of n rows from all tables
+cyber_groups.random_selection(n)
+```
+Add a new calculation column to all tables    
+
+Adding a new calculation column to all tables. Identical to the calculation column code for the CyberTable object.     
+This simple calls that function on all tables in the group.    
+
+- g_reference_column: the column to be used in the calculation
+- g_calculation: the calculation to be done
+- g_calculation_value: if the calculation needs additional input, use this argument ()
+  
+```Python
+cyber_groups.add_batch_row_calculations(g_reference_column_index = n, g_reference_column_name = "name", g_calculation = None, g_calculation_value = None)
+```
+
+Aggregate a group and return a CyberTable
+This is identical to the syntax and structure of the aggregate function in the CyberTable object. The CyberTable aggregate function simply calls this function.
+```Python
+cyber_table = cyber_groups.aggregate(reference_column_indexes = [], reference_column_names = [], calculation_column_indexes = [], calculation_column_names = [],  calculations = []) -> CyberTable
 ```
