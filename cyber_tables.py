@@ -3,108 +3,8 @@ import random
 import math
 from datetime import datetime, timedelta
 
-#----------------------------
-## Reading & saving in data
-# cyber_table = open_csv("E:\Websites\Cyber Dragon\project_area\cyber_table\personality_dataset.csv")
-# cyber_table.save_as_csv(directory, filename_no_ext)
-
-#----------------------------
-## Date types
-# string
-# NULL
-# bool
-# int
-# decimal
-# date
-# datetime
-
-#----------------------------
-## Overview and descriptrion
-# cyber_table.print_structure()
-# cyber_table.print_columns()
-# cyber_table.print()
-# top_five_rows = cyber_table.top(5)
-# bottom_five_rows = cyber_table.bottom(5)
-# random_five = cyber_table.random_selection(5)
-# column_data = cyber_table.return_column_data(0)
-
-#----------------------------
-## Column code
-# new_index = cyber_table.insert_column("New name")
-# column_index = cyber_table.return_column_index_by_name("name")
-# cyber_table.update_data_in_column(new_list, new_index)
-# cyber_table.insert_column_with_data("Bool Data", bool_list)
-# cyber_table.remove_column(name="Stage_fear")
-# cyber_table.remove_column(index = 2)
-# cyber_table.reset_column_indexes()
-# cyber_table.update_column_name(new_value, index)
-# cyber_table.change_column_data_type("int", column_index=0)
-# cyber_table.set_column_string_case(column_index=7, case="lower")
-# cyber_table.clean_string_column(7, capital_first_latter=True)
-# cyber_table.convert_iso_8601_string_to_datetime(11)
-# column = cyber_table.return_column_object_by_index(0)
-# column.lock_column_data_type()
-# column.unlock_column_data_type()
-# cyber_table.analyse_columns()
-
-#----------------------------
-## Sub Tables
-# new_table = cyber_table.return_sub_table_by_columns([0,2,4,7])
-# new_table = cyber_table.return_sub_table_by_row_filters(["Extrovert", True, "NULL"], column_names=["Personality", "Bool Data", "Going_outside"])
-# second_table = cyber_table.return_copy()
-
-#----------------------------
-## Row Code
-# cyber_table.reset_row_indexes()
-# cyber_table.remove_rows_by_column_value(column_index=0, value=4.0)
-# cyber_table.remove_row_by_index(0)
-# items = new_table.return_row_items_by_index(0)
-# distincts = cyber_table.return_distinct_column_values(1)
-# removals, index_list = cyber_table.remove_duplicate_rows()
-# removals, index_list = cyber_table.remove_duplicate_rows_by_columns(column_indexes=[1,4])
-# cyber_table.order_rows_by_column(0, mode="asc")
-# cyber_table.order_rows_by_column(0, mode="desc")
-# row_list = cyber_table.return_rows_as_lists()
-# null_check = cyber_table.return_table_by_nulls_in_column(3)
-
-#----------------------------
-## Calculations
-# sum = cyber_table.return_sum(num)
-# col_min = cyber_table.return_min_value(num)
-# col_max = cyber_table.return_max_value(num)
-# mode, occurences = cyber_table.return_mode(num)
-# mean = cyber_table.return_mean(0)
-# median = cyber_table.return_median(0)
-# nulls = cyber_table.return_null_count(3)
-# non_nulls = cyber_table.return_non_null_count(3)
-# variance = cyber_table.return_variance(column)
-# std = cyber_table.return_standard_deviation(column)
-# range = cyber_table.return_range(column_index)
-# trues = cyber_table.return_true_count_from_column(8)
-# falses = cyber_table.return_false_count_from_column(8)
-# cyber_table.add_calculation_column(0, calculation="individual_variance")
-# cyber_table.add_calculation_column(0, calculation="individual_std")
-# cyber_table.add_calculation_column(0, calculation="row_number")
-# cyber_table.add_calculation_column(9, calculation="+ days", calculation_value=7)
-# cyber_table.add_calculation_column(9, calculation="- days", calculation_value=7)
-# cyber_table.add_calculation_column(9, calculation="above_threshold_percent", calculation_value= 50)
-# cyber_table.add_calculation_column(9, calculation="below_threshold_percent", calculation_value= 50)
-# cyber_table.add_calculation_column(0, calculation="rank")
-# cyber_table.add_calculation_column(0, calculation="ntile", calculation_value= 4)
-
-# aggregated_table = cyber_table.aggregate(reference_column_indexes = [], calculation_column_indexes = [],  calculations = [])
-# aggregation_options = ["sum", "mean", "mode", "median", "max", "min", "nulls", "non_nulls", "row_counts", "standard_deviation", "variance", "range", "true_percentage", "false_percentage"]      
-
-## Grouping
-# groups = cyber_table.return_groups(column_indexes = [0, 4])
-# merged_table = groups.merge_into_cyber_table()
-# groups.top(5)
-# groups.bottom(5)
-# groups.random_selection(5)
-# groups.add_batch_row_calculations(0, calculation="rank")
-# aggregated_table = groups.aggregate(reference_column_indexes = [], calculation_column_indexes = [],  calculations = [])
-
-
+calculation_column_options = ["ntile", "rank", "individual_std", "individual_variance", "row_number", "+ days", "- days", "above_threshold_percent", "below_threshold_percent"]
+aggregation_options = ["sum", "mean", "mode", "median", "max", "min", "nulls", "non_nulls", "row_counts", "standard_deviation", "variance", "range", "true_percentage", "false_percentage"]      
 
 class Column():
     def __init__(self, name, index, data_type = None):
@@ -164,6 +64,64 @@ class CyberTable():
         print("\nPrinting columns")
         for column in self.columns.values():
             print(f"Index: {column.index}, Name: {column.name}, Data Type: {column.data_type}")
+
+    def print_data_overview(self, filter = None):
+        print_string = "Data Overview by column"
+        for idx, column in self.columns.items():
+            name = column.name
+            data_type = column.data_type
+            
+            
+            print_string += f"\n\nIndex: {idx}, {name}, Data Type: {data_type}\n\t"      
+
+            if data_type == "int" or data_type == "decimal":
+                min = self.return_min_value(idx)
+                max = self.return_max_value(idx)
+                range = self.return_range(idx)
+                std = self.return_standard_deviation(idx)
+                mean = self.return_mean(idx)
+                median = self.return_median(idx)
+                mode = self.return_mode(idx)
+                distincts = len(self.return_distinct_column_values(idx))  
+                nulls = self.return_null_count(idx)
+                
+                print_string += f" - Data Range -> Min: {min}, Max: {max}, Range: {range}\n\t"
+                print_string += f" - Averages -> Mean: {mean}, Median: {median}, Mode: {mode[0]} ({mode[1]}), Standard Deviation: {std}\n\t"
+                print_string += f" - Data Summary -> Distinct values: {distincts}, NULL values: {nulls}"
+                
+            elif data_type == "bool":
+                nulls = self.return_null_count(idx)
+                trues = self.return_true_count_from_column(idx)
+                falses = self.return_false_count_from_column(idx)
+                print_string += f" - Data summary ->  NULL values: {nulls}, True values: {trues}, False values: {falses}"
+                
+            elif data_type == "string":
+                min = self.return_min_value(idx)
+                max = self.return_max_value(idx)
+                range = self.return_range(idx)
+                mean = self.return_mean(idx)
+                median = self.return_median(idx)
+                mode = self.return_mode(idx)
+                distincts = len(self.return_distinct_column_values(idx))  
+                nulls = self.return_null_count(idx)
+                
+                print_string += f" - Data Range -> Min: {min} ({len(min)}), Max: {max} ({len(max)}), Range: {range}\n\t"
+                print_string += f" - Averages -> Mean: {mean}, Median: {median}, Mode: {mode[0]} ({mode[1]})\n\t"
+                print_string += f" - Data Summary -> Distinct values: {distincts}, NULL values: {nulls}"
+              
+            elif data_type == "date" or data_type == "datetime":
+                min = self.return_min_value(idx)
+                max = self.return_max_value(idx)
+                range = self.return_range(idx)   
+                mode = self.return_mode(idx)
+                distincts = len(self.return_distinct_column_values(idx))  
+                nulls = self.return_null_count(idx)
+                
+                print_string += f" - Data Range -> Min: {min}, Max: {max}, Range: {range}\n\t"
+                print_string += f" - Averages -> Mode: {mode[0]} ({mode[1]})\n\t"
+                print_string += f" - Data Summary -> Distinct values: {distincts}, NULL values: {nulls}"
+                
+        print(print_string)
 
     def column_names(self) -> str:
         column_names = []
@@ -507,6 +465,14 @@ class CyberTable():
 
         if auto_analyse == True:
             self.analyse_columns(found_index)         
+        
+    def set_column_as_static_value(self, value, column_index = None, column_name = None, auto_analyse = True):
+        index = self.check_and_return_column_index(column_index=column_index, column_name=column_name)
+        if index is not None:
+            for idx, row in self.rows.items():
+                items = row.items
+                items[index] = value
+                row.set_items(items)
         
     def return_table_by_nulls_in_column(self, column_index = None, column_name = None):
         index = self.check_and_return_column_index(column_index = column_index, column_name = column_index)
@@ -979,7 +945,7 @@ class CyberTable():
             elif dtype is str:
                 string_length_list = [len(value) for value in values_only]
                 total = sum(string_length_list)
-                return string_length_list / len(values_only)
+                return total / len(values_only)
             elif dtype is bool:
                 raise ValueError("Cannot return the mean value of a bool column")
             elif column_type == "date" or column_type == "datetime":
@@ -1072,9 +1038,87 @@ class CyberTable():
         variance = self.return_variance(found_column_index)
         return variance ** 0.5          
   
+    def return_covariance(self, column_indexes = [], column_names = []) -> float:
+        indexes = self._internal_validate_return_column_indexes(column_indexes=column_indexes, column_names=column_names)
+        if len(indexes) != 2:
+            raise ValueError(f"Covariance calculation requires inputting two columns")
+        
+        col_one_data_type = self.columns[indexes[0]].data_type
+        col_two_data_type = self.columns[indexes[1]].data_type
+        
+        if col_one_data_type not in ["int", "decimal"] or col_two_data_type not in ["int", "decimal"]:
+            raise ValueError(f"Both columns must be either int or decimal data types")
+        
+        total_n = self.row_count
+        column_one_mean = self.return_mean(indexes[0])
+        column_two_mean = self.return_mean(indexes[1])
+        
+        column_one_values = self.return_column_data(indexes[0])
+        column_two_values = self.return_column_data(indexes[1])
+        
+        column_one_calculations = []
+        column_two_calculations = []
+        for idx in range(total_n):
+            val_one = column_one_values[idx]
+            val_two = column_two_values[idx]
+            
+            if val_one != "NULL" and val_two != "NULL":
+                column_one_calculations.append(val_one - column_one_mean)
+                column_two_calculations.append(val_two - column_two_mean)
+        
+        product_list = []
+        for idx in range(len(column_one_calculations)):
+            val_one_minus_mean = column_one_calculations[idx]
+            val_two_minus_mean = column_two_calculations[idx]
+            product = val_one_minus_mean * val_two_minus_mean
+            product_list.append(product)
+            
+        product_sum = sum(product_list)
+        n_minus_one = len(product_list) - 1
+        
+        if n_minus_one <= 0:
+            return None        
+        else:
+            return product_sum / n_minus_one
+    
+    def return_correlation_coefficient(self, column_indexes = [], column_names = []):
+        indexes = self._internal_validate_return_column_indexes(column_indexes=column_indexes, column_names=column_names)
+        covariance = self.return_covariance(column_indexes=column_indexes, column_names=column_names)
+        column_one_std = self.return_standard_deviation(indexes[0])
+        column_two_std = self.return_standard_deviation(indexes[1])
+        
+        if column_one_std == 0 or column_two_std == 0:
+            return None
+        else:        
+            return covariance / (column_one_std * column_two_std)
+  
+    def find_meantingful_correlations(self):
+        column_list = []
+        results = ""
+        for idx, column in self.columns.items():
+            data_type = column.data_type
+            if data_type == "int" or data_type == "decimal":
+                column_list.append(idx)
+                
+        compared_indexes = []
+        for idx in column_list:
+            for sub_idx in column_list:
+                if idx != sub_idx and [idx, sub_idx] not in compared_indexes:
+                    coeffecient = self.return_correlation_coefficient([idx, sub_idx])
+                    if coeffecient <= -0.01 or coeffecient >= 0.01:
+                        name_one = self.columns[idx].name
+                        name_two = self.columns[sub_idx].name
+                        results += f"\nColumns: {name_one} and {name_two} coeffecient: {coeffecient}"
+            compared_indexes.append([idx, sub_idx])
+            compared_indexes.append([sub_idx, idx])
+        print("List of all meaningful correlations found in numerical columns")
+        if results != "":
+            print(results)
+        else: print("None...")
+  
     ### Calculation Columns
     def add_calculation_column(self, reference_column_index = None, reference_column_name = None, calculation = None, calculation_value = None):
-        options = ["ntile", "rank", "individual_std", "individual_variance", "row_number", "+ days", "- days", "above_threshold_percent", "below_threshold_percent"]
+        options = calculation_column_options
         
         if calculation not in options:
             raise KeyError(f"Input option {calculation} not in list of approved options: {options}")
@@ -1643,6 +1687,44 @@ class CyberTable():
         aggregate_table = groups.aggregate(reference_column_indexes=column_index_list, calculation_column_indexes=calculation_column_index_list, calculations=calculations)
         return aggregate_table       
        
+    ### NEW    
+    def select(self, column_indexes = [], column_names = [], where_by_index = {}, where_by_name = {}, order_by = [], order_mode = "asc", limit = None, return_subtable = False):
+        # Plan: Add in more logic to where besides ==
+        reference_indexes = self._internal_validate_return_column_indexes(column_indexes = column_indexes, column_names = column_names)
+                
+        reference_values = []
+        check_values = []     
+
+        if where_by_index != {}:
+            for column, value in where_by_index.items():
+                index = self.check_and_return_column_index(column)
+                if index != None:
+                    reference_values.append(index)
+                    check_values.append(value)
+        elif where_by_name != {}:
+            for column, value in where_by_name.items():
+                index = self.check_and_return_column_index(column)
+                if index != None:
+                    reference_values.append(index)
+                    check_values.append(value)  
+            
+        subtable = self.return_sub_table_by_row_filters(values=check_values, column_indexes=reference_values)
+        
+        if order_by != []:
+            reversed_indexes = reversed(order_by)
+            for index in reversed_indexes:
+                validated_index = subtable.check_and_return_column_index(index)
+                subtable.order_rows_by_column(validated_index, order_mode)
+                
+        reduced_sub_table = subtable.return_sub_table_by_columns(reference_indexes)        
+        
+        if limit == None:
+            reduced_sub_table.print()
+        else:
+            reduced_sub_table.top(limit)  
+            
+        if return_subtable == True:
+            return reduced_sub_table
        
 class CyberTableGroup():
     def __init__(self):
@@ -1706,7 +1788,7 @@ class CyberTableGroup():
         return self.groups    
     
     def aggregate(self, reference_column_indexes = [], reference_column_names = [], calculation_column_indexes = [], calculation_column_names = [],  calculations = []) -> CyberTable:
-        options = ["sum", "mean", "mode", "median", "max", "min", "nulls", "non_nulls", "row_counts", "standard_deviation", "variance", "range", "true_percentage", "false_percentage"]      
+        options = aggregation_options
                 
         for calculation in calculations:
             if calculation not in options:
@@ -1878,8 +1960,7 @@ class CyberTableGroup():
             raise IndexError(f"There are no tables in the group")
         for table in self.groups:
             table.random_selection(number)
-       
-       
+           
        
 # Normal Functions   
 
@@ -2066,3 +2147,12 @@ def round_trip_csv(file, delimiter = ",", convert_iso_8601 = True):
                 cyber_table.convert_iso_8601_string_to_datetime(key)
                 
     cyber_table.save_as_csv(directory, new_file, delimiter=delimiter)
+
+### Help
+def help():
+        documentation = "https://github.com/thecyberdragon/Python-Scripts/blob/main/cyber_tables_documentation.md"
+        print(f"====== Cyber Tables ======")
+        print(f"Documentaion on GitHub: {documentation}")
+        print(f"Options for adding calculation columns: {calculation_column_options}")
+        print(f"Options for aggrgating table data: {aggregation_options}")
+
