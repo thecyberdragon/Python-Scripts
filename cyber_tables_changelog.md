@@ -6,6 +6,8 @@ New: Added select() function to print select columns with filters to mimic SQL s
 New: Added help() to feed back options for calculation columns and aggegation.    
 New: Added set_column_as_static_value() to add a single value to all rows in one column.    
 Bug: Fixed issue returning mean from a string column.    
+New: Added return_covariance() to calculate covariance between two columns.    
+New: Added return_correlation_coefficient() to calculate the correlation coefficient of two columns.    
 
 ### 2025-06-26    
 Bug: Added in code to read_csv to check for quotations to handle values containing the comma delimiter.    
@@ -31,3 +33,5 @@ Bug: Returned sub tables didn't reset row or column indexes - Fixed. Reurning a 
 - Add select()
 - Add set_column_as_static_value()
 - Add print_data_overview()
+- Add return_covariance()
+- Add return_correlation_coefficient()
