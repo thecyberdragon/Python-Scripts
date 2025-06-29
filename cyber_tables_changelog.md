@@ -8,6 +8,7 @@ New: Added set_column_as_static_value() to add a single value to all rows in one
 Bug: Fixed issue returning mean from a string column.    
 New: Added return_covariance() to calculate covariance between two columns.    
 New: Added return_correlation_coefficient() to calculate the correlation coefficient of two columns.    
+New: Added find_meantingful_correlations() to check all numerical columns for a meaningful coefficient.     
 
 ### 2025-06-26    
 Bug: Added in code to read_csv to check for quotations to handle values containing the comma delimiter.    
@@ -35,3 +36,4 @@ Bug: Returned sub tables didn't reset row or column indexes - Fixed. Reurning a 
 - Add print_data_overview()
 - Add return_covariance()
 - Add return_correlation_coefficient()
+- Add find_meantingful_correlations()
