@@ -2,7 +2,8 @@
 ## Changelog
 
 ### 205-06-29
-New: Added new select() function to print select columns with filters to mimic SQL statements.    
+New: Added select() function to print select columns with filters to mimic SQL statements.    
+New: Added helo() to 
 
 ### 2025-06-26    
 Bug: Added in code to read_csv to check for quotations to handle values containing the comma delimiter.    
@@ -24,3 +25,7 @@ Bug: Returned sub tables didn't reset row or column indexes - Fixed. Reurning a 
 - Add in static column value inserting
 - Add in general data overview function
 - Replace repeated code with functions
+
+## Documentation to do list
+- Add help()
+- Add select()
