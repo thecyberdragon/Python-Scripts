@@ -23,8 +23,6 @@ Bug: Returned sub tables didn't reset row or column indexes - Fixed. Reurning a 
 
 ## Current plans
 - Add in functions to return values for use in matplotlib and seaborn
-- Calculate covariance
-- Calculate correlation coefficient
 - Add in dict support for aggregation functions
 - Add calculation column option -> days between dates / datetimes
 - Replace repeated code with functions
