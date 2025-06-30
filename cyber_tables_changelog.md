@@ -33,3 +33,6 @@ values being a list of lists allows for structured use of logic in the select fu
 Updated select() to check data types for non != and = comparrisons and raise value error if not numerical.    
 To test.   
 calculation column added: days_between. Untested.
+Added in command_dict = {} into aggregate function of the table object to take priority over calculation column indexes and calculation lists. 
+Added the same into the groups object.    
+To test. 
