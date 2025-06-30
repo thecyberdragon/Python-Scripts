@@ -28,10 +28,4 @@ Bug: Returned sub tables didn't reset row or column indexes - Fixed. Reurning a 
 - Replace repeated code with functions
 
 ## Documentation to do list
-- Add help()
-- Add select()
-- Add set_column_as_static_value()
-- Add print_data_overview()
-- Add return_covariance()
-- Add return_correlation_coefficient()
-- Add find_meantingful_correlations()
+- None
