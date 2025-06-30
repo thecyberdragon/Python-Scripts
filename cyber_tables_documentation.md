@@ -7,6 +7,12 @@ The intention is to create something that can be an alternative to something lik
 Cyber tables is also free of non-native Python dependancies, allowing you to use it 'out of the box'.    
 In the cyber_tables code are numerous functions beginning with _internal, they are only to be used if you know what you're doing. They are designed to only be used by normally-named functions.    
 
+### Helper Code
+When importing the module or using the script directly, you can print out the options for aggregation and calculation columns.
+```Python
+help()
+```
+
 ### Structure
 Cyber tables is made up of four classes / objects:
 - Row: A row object contains a unique index for that row and the items in that row as a list
@@ -71,6 +77,22 @@ cyber_table.print_columns()
 
 # Prints the above plus information plus the number of columns in the list, in the count property, how many rows there are and the row count property
 cyber_table.print_structure()
+
+# Loop through all columns and perform overview calculations depending on the data type to help give you an overview of the data    
+cyber_table.print_data_overview()
+```
+
+### SQL-style select
+This code is designed to mimic the SQL syntax un function form.    
+- Column names / indexes -> The columns to show in the final print
+- where_by_index / name -> dictionary to specify match conditions such as {"name":"dennis", "age":24}
+- order_by -> column indexes in order of priority to order the table data
+- order_mode -> asc for ascending, desc for descending
+- limit -> limit the number of printed rows
+- return_subtable -> returns a CyberTable object at the end
+```Python
+# Prints select columns and table rows where conditions are met with optional limit, and option to return a new table object
+cyber_table.select(column_indexes = [], column_names = [], where_by_index = {}, where_by_name = {}, order_by = [], order_mode = "asc", limit = None, return_subtable = False)
 ```
 
 ### Indexes
@@ -113,6 +135,9 @@ cyber_table.analyse_columns(column_index = n, column_name = "name")
 
 # Update the data in a column using a list. The list must equal the number of rows in the table and be in update order
 cyber_table.update_data_in_column(data:list, column_index = None, column_name = "name", auto_analyse = True/False)
+
+# Adding a single static value to all rows under a column
+cyber_table.set_column_as_static_value("static value", column_index = n, column_name = "name", auto_analyse = True)
 ```
 
 Removing columns or values by column
@@ -273,6 +298,18 @@ cyber_table.return_variance(column_index = n, column_name = "name")
 # Returns the standard deviation
 # Accepted data types: int, decimal
 cyber_table.return_standard_deviation(column_index = n, column_name = "name")
+
+# Returns the covariance between two numeircal columns
+# Accepted data types: int, decimal
+cyber_table.return_covariance(column_indexes = [], column_names = []) -> float
+
+# Returns the correlation coefficient of two numerical columns
+# Accepted data types: int, decimal
+cyber_table.return_correlation_coefficient(column_indexes = [], column_names = [])
+
+# Checks all numerical columns against all other numerical columns and returns pairings with <= -0.25 or >= 0.25 correlation coefficient
+cyber_table.find_meantingful_correlations()
+
 ```
 
 ### Calculation columns
