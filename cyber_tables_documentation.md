@@ -93,6 +93,10 @@ This code is designed to mimic the SQL syntax un function form.
 ```Python
 # Prints select columns and table rows where conditions are met with optional limit, and option to return a new table object
 cyber_table.select(column_indexes = [], column_names = [], where_by_index = {}, where_by_name = {}, order_by = [], order_mode = "asc", limit = None, return_subtable = False)
+
+# Example
+cyber_table.select(column_indexes=[1,5,7,8], where_by_index = {2:"dennis", 5:True, 11:24}, order_by = [2, 3], order_mode = "desc", limit = 20)
+# Print columns 1, 5, 7 and 8 where column 2 = "dennis", column 5 = True and column 11 = 24, order by column 2, then column 3 descending, and only print the top 20 items
 ```
 
 ### Indexes
