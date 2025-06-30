@@ -32,3 +32,4 @@ _internal_return_rows_by_value_recursive(self, input_rows:dict, column_indexes:l
 values being a list of lists allows for structured use of logic in the select function: < <= > >= = !=.    
 Updated select() to check data types for non != and = comparrisons and raise value error if not numerical.    
 To test.   
+calculation column added: days_between. Untested.
