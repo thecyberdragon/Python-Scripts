@@ -1,7 +1,21 @@
 # Cyber Tables
 ## Changelog
 
-### 205-06-29
+### 2025-07-04
+Organisation: Refactored all code
+New: Added in dict support for aggregation functions in CyberTable and CyberTableGroup objects.    
+New: Added in 'days_between' calculation column option to return the days between two dates / datetimes. Needs testing.    
+New: Within function return_sub_table_by_row_filters(), if 'values' is a 2x item list of lists, "=", "!=", "<", "<=", ">", ">=" can be used to filter rows by the second list item instead of the default: ==. Example: column_indexes=[1,2] values=[["<", 50], ["!=", "True"]] <- filter where column index 1 is less than 50, and column index 2 is not True. non != and = logic can only be performed on numeric or datetime columns.        
+Update: select() now has where_by_index and where_by_name dictionary commands that get passed to the above return_sub_table_by_row_filters() function.    
+Update: print_data_overview() has an optional filter option which will only print column stats from within that filter. Options: ["numeric", "string", "bool", "date"].  
+Update: data overview filters added to help() print.    
+Added: Numerous _internal functions for the refactoring process. 
+Added: Row object: get_items().    
+Added: Column object: get_index(), get_data_type(), get_name(), get_analyse_property().    
+Added: Column object: get_longest_value() and longest_value property for probably later implementation.    
+Added: CyberTable object: return_column_count(), return_row_count(), return_last_row_index().    
+
+### 2015-06-29
 New: Added select() function to print select columns with filters to mimic SQL statements.    
 New: Added help() to feed back options for calculation columns and aggegation.    
 New: Added set_column_as_static_value() to add a single value to all rows in one column.    
@@ -23,16 +37,6 @@ Bug: Returned sub tables didn't reset row or column indexes - Fixed. Reurning a 
 
 ## Current plans
 - Add in functions to return values for use in matplotlib and seaborn
-- Add in dict support for aggregation functions
-- Add calculation column option -> days between dates / datetimes
-- Replace repeated code with functions
 
 ## WIP
-_internal_return_rows_by_value_recursive(self, input_rows:dict, column_indexes:list, values:list):
-values being a list of lists allows for structured use of logic in the select function: < <= > >= = !=.    
-Updated select() to check data types for non != and = comparrisons and raise value error if not numerical.    
-To test.   
-calculation column added: days_between. Untested.
-Added in command_dict = {} into aggregate function of the table object to take priority over calculation column indexes and calculation lists. 
-Added the same into the groups object.    
-To test. 
+ 
