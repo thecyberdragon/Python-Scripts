@@ -8,7 +8,7 @@ Cyber tables is also free of non-native Python dependancies, allowing you to use
 In the cyber_tables code are numerous functions beginning with _internal, they are only to be used if you know what you're doing. They are designed to only be used by normally-named functions.    
 
 ### Helper Code
-When importing the module or using the script directly, you can print out the options for aggregation and calculation columns.
+When importing the module or using the script directly, you can print out the options for aggregation and calculation columns, and overview filters.
 ```Python
 help()
 ```
@@ -78,8 +78,15 @@ cyber_table.print_columns()
 # Prints the above plus information plus the number of columns in the list, in the count property, how many rows there are and the row count property
 cyber_table.print_structure()
 
-# Loop through all columns and perform overview calculations depending on the data type to help give you an overview of the data    
-cyber_table.print_data_overview()
+# Loop through all columns and perform overview calculations depending on the data type to help give you an overview of the data
+# Options: ["all", "numeric", "string", "bool", "date"]
+cyber_table.print_data_overview(filter='all')
+
+# Return the number of columns
+n = cyber_table.return_column_count() -> int
+
+# Return the number of rows
+n = cyber_table.return_row_count() -> int
 ```
 
 ### SQL-style select
@@ -97,6 +104,9 @@ cyber_table.select(column_indexes = [], column_names = [], where_by_index = {}, 
 # Example
 cyber_table.select(column_indexes=[1,5,7,8], where_by_index = {2:"dennis", 5:True, 11:24}, order_by = [2, 3], order_mode = "desc", limit = 20)
 # Print columns 1, 5, 7 and 8 where column 2 = "dennis", column 5 = True and column 11 = 24, order by column 2, then column 3 descending, and only print the top 20 items
+
+# You can change the logical comparrison from == if instead of using "age":24, you make the comparrison value a 2 item list with item 1 being the prefered comparrison.    
+# "age":24 -> age == 24, "age":["<",24] -> age < 24. By default, == is the comparrison used unless a valid 2-item list is used in place of a single value.    
 ```
 
 ### Indexes
@@ -317,7 +327,7 @@ cyber_table.find_meantingful_correlations()
 ```
 
 ### Calculation columns
-calculation_column_options = ["ntile", "rank", "individual_std", "individual_variance", "row_number", "+ days", "- days", "above_threshold_percent", "below_threshold_percent"]
+calculation_column_options = ["ntile", "rank", "individual_std", "individual_variance", "row_number", "+ days", "- days", "days_between", "above_threshold_percent", "below_threshold_percent"]
 
 ```Python
 # Add a new column with a calculation on each row based on the reference column
@@ -331,6 +341,7 @@ cyber_table.add_calculation_column(reference_column_index = n, reference_column_
 - row_number: gives each row a number top to bottom in default order
 - \+ days: adds n days to a date or datetime based on the value given in the calculation_value argument
 - \- days: subtracts n days from a date or datetime based on the value given in the calculation_value argument
+- days_between: finds the number of days between two date or datetimes
 - above_theshold_percent: gives each row a True or False value if the reference column falls in the top n percent given in the calculation_value argument
 - below_threshold_percent: gives each row a True or False value if the reference column falls in the bottom n percent given in the calculation_value argument
 
@@ -363,10 +374,13 @@ The count of calculation columns must match the count of calculations.
 
 ```Python
 # Return a cyber table with aggregated data
-aggregated_table = cyber_table.aggregate(reference_column_indexes = [], reference_column_names = [], calculation_column_indexes = [], calculation_column_names = [], calculations = []) -> CyberTable
+aggregated_table = cyber_table.aggregate(command_dict = {}, reference_column_indexes = [], reference_column_names = [], calculation_column_indexes = [], calculation_column_names = [], calculations = []) -> CyberTable
 
 # Example -> By all unique values in columns 0 and 1, calculate the mean of column 4 and the sum of column 7
 aggregated_table = cyber_table.aggregate(reference_column_indexes = [0, 1],calculation_column_indexes = [4, 7], calculations = ["mean", "sum"])
+
+# Example -> Performs the same as the example above but using the command dictionary.
+aggregated_table = cyber_table.aggregate(reference_column_indexes = [0, 1], command_dict = {4:"mean", 7:"sum")
 ```
 Aggregation descriptions:
 - sum: add up all values
