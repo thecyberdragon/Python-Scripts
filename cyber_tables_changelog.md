@@ -36,6 +36,10 @@ Bug: ISO 8601 detection doesn't account for milliseconds - Fixed. Now checks the
 Bug: Returned sub tables didn't reset row or column indexes - Fixed. Reurning a sub table always resets all indexes.    
 
 ## Current plans
+- Add functionality to track the longest item in a column to easily display columns in maximum width
+- Add in dunder methods to make some features easier to use
+- Do bug testing on a normal data analysis
+- Add in a way to allow users to create custom calculation columns without using preset functions
 - Add in functions to return values for use in matplotlib and seaborn
 
 ## WIP
