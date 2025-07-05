@@ -380,7 +380,7 @@ aggregated_table = cyber_table.aggregate(command_dict = {}, reference_column_ind
 aggregated_table = cyber_table.aggregate(reference_column_indexes = [0, 1],calculation_column_indexes = [4, 7], calculations = ["mean", "sum"])
 
 # Example -> Performs the same as the example above but using the command dictionary.
-aggregated_table = cyber_table.aggregate(reference_column_indexes = [0, 1], command_dict = {4:"mean", 7:"sum")
+aggregated_table = cyber_table.aggregate(reference_column_indexes = [0, 1], command_dict = {4:"mean", 7:"sum"})
 ```
 Aggregation descriptions:
 - sum: add up all values
