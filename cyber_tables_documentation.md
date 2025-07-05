@@ -106,7 +106,10 @@ cyber_table.select(column_indexes=[1,5,7,8], where_by_index = {2:"dennis", 5:Tru
 # Print columns 1, 5, 7 and 8 where column 2 = "dennis", column 5 = True and column 11 = 24, order by column 2, then column 3 descending, and only print the top 20 items
 
 # You can change the logical comparrison from == if instead of using "age":24, you make the comparrison value a 2 item list with item 1 being the prefered comparrison.    
-# "age":24 -> age == 24, "age":["<",24] -> age < 24. By default, == is the comparrison used unless a valid 2-item list is used in place of a single value.    
+# "age":24 -> age == 24, "age":["<",24] -> age < 24. By default, == is the comparrison used unless a valid 2-item list is used in place of a single value.
+
+# Options
+# "=", "!=", "<", "<=", ">", ">="
 ```
 
 ### Indexes
