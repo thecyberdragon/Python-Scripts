@@ -2,7 +2,7 @@
 ## Changelog
 
 ### 2025-07-07
-Update: open_csv() Ignore errors on string encode if not UTF-8    
+Update: open_csv() Ignore errors on string encode if not UTF-8 and trim_excess_columns = True added to function to handle wonky columns with no data    
 New: Added function generate_static_column_data() to add in a single value to all tables    
 New: Added rename_column() function to rename a column name    
 New: Added print_row_detailed() function to print a single row mirroring the print method of print_columns()    
@@ -49,8 +49,8 @@ Bug: Returned sub tables didn't reset row or column indexes - Fixed. Reurning a 
 - Add functionality to track the longest item in a column to easily display columns in maximum width
 - Add in dunder methods to make some features easier to use
 - Do bug testing on a normal data analysis
-- Add in a way to allow users to create custom calculation columns without using preset functions
 - Add in functions to return values for use in matplotlib and seaborn
+- Make subtable filter recurrsion work with different data types and values better
 
 ## WIP
  
