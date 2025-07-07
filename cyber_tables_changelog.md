@@ -8,6 +8,7 @@ New: Added rename_column() function to rename a column name
 New: Added print_row_detailed() function to print a single row mirroring the print method of print_columns()    
 Bug: return_sub_row_by_index() used wrong index in return_row_items_by_index() function. Fixed     
 Update: Added null_excess_columns paramater into open_csv() to automatically insert "NULL" in columns with no data    
+Added: replace_string_data_in_column() to replace values in a column if the column is a string    
 
 ### 2025-07-04
 Organisation: Refactored all code
