@@ -33,8 +33,8 @@ Cyber tables is made up of four classes / objects:
 Opening a CSV as a cyber_table
 ```Python
 import cyber_tables
-
-cyber_table = open_csv("file_path", delimiter = ",")
+# option to change delimiter and null extra columns by inserting "NULL" into all rows
+cyber_table = open_csv("file_path", delimiter = ",", null_excess_columns = True)
 ```
 
 Return a copy of a table
