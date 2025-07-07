@@ -50,7 +50,7 @@ Bug: Returned sub tables didn't reset row or column indexes - Fixed. Reurning a 
 - Add in dunder methods to make some features easier to use
 - Do bug testing on a normal data analysis
 - Add in functions to return values for use in matplotlib and seaborn
-- Make subtable filter recurrsion work with different data types and values better
+- Convert incoming data to float from scientific notation instead of string
 
 ## WIP
  
