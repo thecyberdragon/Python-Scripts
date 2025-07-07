@@ -166,6 +166,12 @@ cyber_table.remove_column(index = n, name = "name") -> Column
 cyber_table.remove_row_data_by_column_index(n)
 ```
 
+Renaming a column
+```Python
+# Remove a column by the index or column name
+cyber_table.rename_column(new_name, column_index = n, column_name = "name")
+```
+
 Returning column values
 ```Python
 # Return the index of a column using the name. Returns as None if the name is not found.
@@ -204,6 +210,9 @@ Updating rows
 ```Python
 # Update a row. The updated list must be the same length as the column count
 cyber_table.update_row(row_index, updated_items)
+
+# Add a static value to all rows in a specific column
+cyber_table.generate_static_column_data(value, column_index = n, column_name = "name", auto_analyse = True)
 ```
 
 Removing rows
@@ -225,6 +234,9 @@ cyber_table.return_rows_as_lists() -> list[list]
 
 # Return a list of items in a row excluding columns not specified
 cyber_table.return_sub_row_by_index(row_index:int, column_indexes = [], column_names = []) -> list
+
+# Print a detailed breakdown of a row by the column name, index and data type
+cyber_table.print_row_detailed(row_index = n)
 ```
 
 Return values based on rows
