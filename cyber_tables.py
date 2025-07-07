@@ -2,8 +2,9 @@ import os
 import random
 import math
 from datetime import datetime, timedelta
+from datetime import time as dtime
 
-calculation_column_options = ["ntile", "rank", "individual_std", "individual_variance", "row_number", "+ days", "- days", "days_between" "above_threshold_percent", "below_threshold_percent"]
+calculation_column_options = ["ntile", "rank", "individual_std", "individual_variance", "row_number", "+ days", "- days", "days_between", "above_threshold_percent", "below_threshold_percent"]
 aggregation_options = ["sum", "mean", "mode", "median", "max", "min", "nulls", "non_nulls", "row_counts", "standard_deviation", "variance", "range", "true_percentage", "false_percentage"]      
 print_data_overview_options = ["all", "numeric", "string", "bool", "date"]
 
@@ -188,15 +189,23 @@ class CyberTable():
                 if old_value == "NULL":
                     break
                 
+                old_data_type = type(old_value)                               
+                
                 if data_type == "string": items[index] = str(old_value)
                 elif data_type == "int": items[index] = int(old_value)
                 elif data_type == "decimal": items[index] = float(old_value)
                 elif data_type == "bool": items[index] = bool(old_value)
-                elif data_type == "date": items[index] = datetime.strptime(old_value, "%Y-%m-%d")
+                elif data_type == "date" and old_data_type is datetime.date: items[index] = old_value
+                elif data_type == "date" and old_data_type is datetime: items[index] = old_value.date()
+                elif data_type == "date" and old_data_type is str: items[index] = datetime.strptime(old_value, "%Y-%m-%d").date()
+                elif data_type == "datetime": items[index] = datetime.strptime(old_value, "%Y-%m-%d %H:%M:%S")
+                elif data_type == "datetime" and old_data_type is datetime.date: items[index] = datetime.combine(old_value, dtime())
+                elif data_type == "datetime" and old_data_type is datetime: items[index] = old_value
                 elif data_type == "datetime": items[index] = datetime.strptime(old_value, "%Y-%m-%d %H:%M:%S")
                 elif data_type == "NULL": items[index] = "NULL"                      
             return True    
         except:
+            print(f"Caught: {old_value} as {old_data_type} at index {idx}")
             return False 
     
     def _internal_set_column_data_as_datatype(self, index, data_type):
@@ -212,18 +221,22 @@ class CyberTable():
                 elif data_type == "int": items[index] = int(old_value)
                 elif data_type == "decimal": items[index] = float(old_value)
                 elif data_type == "bool": items[index] = string_to_bool(old_value)
-                elif data_type == "date" and type(old_value) is datetime: items[index] = datetime.strftime(old_value, "%Y-%m-%d")
-                elif data_type == "datetime" and type(old_value) is datetime: items[index] = datetime.strftime(old_value, "%Y-%m-%d %H:%M:%S")
-                elif data_type == "date": items[index] = datetime.strptime(old_value, "%Y-%m-%d")
-                elif data_type == "datetime": items[index] = datetime.strptime(old_value, "%Y-%m-%d %H:%M:%S")
+                elif data_type == "date" and type(old_value) is datetime.date: items[index] = old_value
+                elif data_type == "date" and type(old_value) is datetime: items[index] = old_value.date()
+                elif data_type == "datetime" and type(old_value) is datetime: items[index] = old_value
+                elif data_type == "datetime" and type(old_value) is datetime.date: items[index] = datetime.combine(old_value, dtime())
+                elif data_type == "date" and type(old_value) is str: items[index] = datetime.strptime(old_value, "%Y-%m-%d").date()
+                elif data_type == "datetime"  and type(old_value) is str: items[index] = datetime.strptime(old_value, "%Y-%m-%d %H:%M:%S")
                 elif data_type == "NULL": items[index] = "NULL"
                 
                 self.rows[idx].set_items(items)                
             
         except ValueError as ve:
-            raise ValueError(f"Value Error setting data type for index {index} to type {data_type}\n{ve}")
+            raise ValueError(f"Value Error setting data type for index {index} to type {data_type} for value {old_value}\n{ve}")
         except TypeError as te:
-            raise TypeError(f"Value Error setting data type for index {index} to type {data_type}\n{te}")
+            raise TypeError(f"Type Error setting data type for index {index} to type {data_type} for value {old_value}\n{te}")
+        except Exception as ge:
+            print(f"General exeption: {ge}")
 
     def _internal_insert_data_into_column(self, data:list, column_index = None, column_name = None):
         input_row_length = len(data)
@@ -433,17 +446,17 @@ class CyberTable():
             row_items.pop(removal_index)
             self.rows[index].set_items(row_items)
         
-    def remove_column(self, index = None, name = None) -> Column:
+    def remove_column(self, column_index = None, column_name = None) -> Column:
+        index = self.check_and_return_column_index(column_index=column_index, column_name=column_name) 
         if index is not None:
             self._internal_decrement_column_count()
             self.remove_row_data_by_column_index(index)
             return self.columns.pop(index)
-        if name is not None:
-            for index, column in self.columns.items():
-                if column.get_name() == name:
-                    self._internal_decrement_column_count()
-                    self.remove_row_data_by_column_index(index)
-                    return self.columns.pop(index)   
+                 
+    def rename_column(self, new_name, column_index = None, column_name = None):
+        index = self.check_and_return_column_index(column_index=column_index, column_name=column_name) 
+        if index is not None:
+            self.columns[index].set_name(new_name)  
                  
     def insert_column(self, name) -> int:
         self.reset_column_indexes()
@@ -460,6 +473,32 @@ class CyberTable():
         new_index = self.insert_column(name)
         self.update_data_in_column(data, column_index=new_index, auto_analyse=auto_analyse)        
                    
+    def generate_static_column_data(self, value, column_index = None, column_name = None, auto_analyse = True):
+        index = self.check_and_return_column_index(column_index=column_index, column_name=column_name)
+        if index is None:
+            raise KeyError(f"Index {index} not found in list of known column indexes")
+        column_data = [value for iteration in range(self.return_row_count())]
+        self.update_data_in_column(column_data, column_index=index)
+        if auto_analyse == True:
+            self.analyse_columns(column_index=index)               
+    
+    def replace_string_data_in_column(self, value_to_replace, new_value, column_index = None, column_name = None):
+        index = self.check_and_return_column_index(column_index=column_index, column_name=column_name)
+        if index is None:
+            raise KeyError(f"Index {index} not found in list of known column indexes")
+        data_type = self.columns[index].get_data_type()
+        if data_type != "string":
+            raise ValueError(f"Input column data type must first be a string")
+        
+        for idx, row in self.rows.items():
+            items = row.get_items()            
+            old_item = str(items[index])
+            new_item = old_item.replace(value_to_replace, new_value)
+            items[index] = new_item
+            if old_item != new_item and old_item != "NULL":
+                self.rows[idx].set_items(items)      
+            
+    
     def update_data_in_column(self, data:list, column_index = None, column_name = None, auto_analyse = True):
         input_row_length = len(data)
         row_count = self.return_row_count()        
@@ -557,16 +596,29 @@ class CyberTable():
             return input_rows
         
         column_index = column_indexes[0]
+        data_type = self.return_column_object_by_index(column_index).get_data_type()
         value_filter = values[0]
         comparrison = "="
         
-        if type(value_filter) == list and len(value_filter == 2):
+        if type(value_filter) == list and len(value_filter) == 2:
             comparrison = value_filter[0]
             value_filter = value_filter[1]
         
         filtered_rows = {}
         for idx, row in input_rows.items():
-            items = row.get_items()
+            items = row.get_items()        
+            
+            item_one = items[column_index]
+            item_two = value_filter
+            
+            non_exact_filter_types = [int, float, datetime, datetime.date]
+            
+            if comparrison in ["<", ">", "<=", ">="]:
+                if item_one == "NULL" or item_two == "NULL":
+                    continue
+                if data_type not in ["int", "decimal", "date", "datetime"]:
+                    raise ValueError(f"Cannot compare non-numeric or datetime-like data without exact comparrisons != and =")     
+            
             if comparrison == "=" and items[column_index] == value_filter:
                 filtered_rows[idx] = row
             if comparrison == "!=" and items[column_index] != value_filter:
@@ -641,7 +693,7 @@ class CyberTable():
         if row_index not in self.rows.keys():
             raise ValueError(f"Row index {row_index} not found in list of row indexes")
                 
-        values = self.return_row_items_by_index(index)        
+        values = self.return_row_items_by_index(row_index)        
         column_indexes = self._internal_validate_return_column_indexes(column_indexes=column_indexes, column_names=column_names, raise_error=True)
              
         sub_row = []
@@ -707,6 +759,13 @@ class CyberTable():
         for row in self.rows.values():
             return_list.append(row.get_items())
         return return_list
+
+    def print_row_detailed(self, row_index = None):
+        if row_index not in self.rows.keys():
+            raise KeyError(f"Index {row_index} not in list of known row indexes")
+        data = self.rows[row_index].get_items()
+        for idx, column in self.columns.items():
+            print(f"Index: {idx}, Name: {column.get_name()}, Data Type: {column.get_data_type()} -> Value: {data[idx]}, Value data type: {type(data[idx])}")
 
     ### Indexes
     def reset_row_indexes(self):
@@ -855,7 +914,7 @@ class CyberTable():
                     check_values.append(value)  
                     
         for idx in range(len(check_values)):
-            column_index = reference_indexes[idx]
+            column_index = reference_values[idx]
             check_val = check_values[idx]
             
             data_type = self.return_column_object_by_index(column_index).get_data_type()
@@ -1364,7 +1423,7 @@ class CyberTable():
         elif calculation == "days_between":           
             if reference_data_type not in ["date","datetime"]:
                 raise ValueError(f"Date calculations require a reference column of date or datetime")
-            if calculation_value is not int:
+            if type(calculation_value) is not int:
                 raise ValueError(f"Input calculation value must be the int")
             second_column_index = self.check_and_return_column_index(calculation_value)
             if second_column_index is None:
@@ -1377,16 +1436,17 @@ class CyberTable():
             new_column.set_data_type("int")  
             
             for idx, row in self.rows.items():
-                items = row.items
+                items = row.get_items()
                 reference_value = items[reference_index]  
-            if reference_value != "NULL":
-                days_between_time_delta:timedelta = reference_value - second_column_index                
-                time_between = days_between_time_delta.days
-                items.append(time_between)
-                self.update_row(idx, items)  
-            else:
-                items.append("NULL")
-                self.update_row(idx, items)  
+                second_reference_value = items[second_column_index]
+                if reference_value != "NULL" and second_reference_value != "NULL":                 
+                    days_between_time_delta:timedelta = reference_value - second_reference_value                
+                    time_between = days_between_time_delta.days
+                    items.append(time_between)
+                    self.update_row(idx, items)
+                else:
+                    items.append("NULL")
+                    self.update_row(idx, items)  
                 
         elif calculation == "above_threshold_percent":
             if calculation_value is None or (type(calculation_value) is not int and type(calculation_value) is not float) :
@@ -2086,7 +2146,7 @@ def replace_missing_with_nulls(input_list:list):
         return return_list
     
 ### File operations
-def open_csv(file, delimiter = ",") -> CyberTable:
+def open_csv(file, delimiter = ",", null_excess_columns = True) -> CyberTable:
     
     if os.path.exists(file):
         # Create the table object
@@ -2097,16 +2157,19 @@ def open_csv(file, delimiter = ",") -> CyberTable:
             lines = open_file.readlines()           
             column_line = lines[0].rstrip("\n") 
             columns = column_line.split(delimiter)   
+            
+            row_lines = lines[1:]
+            row_lines = [line.encode("cp1252", errors="ignore").decode("cp1252") for line in row_lines]
                     
             # Add column objects to the table
             index = 0
             for column in columns:                
-                column_object = Column(column, index)
+                column_object = Column(column, index)                
                 cyber_table._internal_add_column(column_object)
                 index += 1
             
             # Add all lines to the table object
-            for line in lines[1:]:
+            for line in row_lines:
                 line_string = line.rstrip("\n")
                 line_string = line_string.replace(",,", ",NULL,")
                 line_list = line_string.split(delimiter) 
@@ -2131,9 +2194,19 @@ def open_csv(file, delimiter = ",") -> CyberTable:
                         values_corrected.append(value)
                     elif building == False and builder_string != "":
                         values_corrected.append(builder_string)
-                        builder_string = ""               
+                        builder_string = ""      
+                        
+                # Fill in extra dodgey columns with NULL
+                if null_excess_columns == True:
+                    columns = len(values_corrected)
+                    column_count = cyber_table.return_column_count()
+                    difference = column_count - columns
+                    if difference > 0:
+                        for iteration in range(difference):
+                            values_corrected.append("NULL") 
                     
-                cyber_table.add_row(values_corrected)
+                cyber_table.add_row(values_corrected)               
+                              
                 
         # Detect data types
         cyber_table.analyse_columns()    
