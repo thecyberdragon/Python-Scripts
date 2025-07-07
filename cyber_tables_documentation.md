@@ -468,3 +468,14 @@ This is identical to the syntax and structure of the aggregate function in the C
 ```Python
 cyber_table = cyber_groups.aggregate(reference_column_indexes = [], reference_column_names = [], calculation_column_indexes = [], calculation_column_names = [],  calculations = []) -> CyberTable
 ```
+### Updating values manually
+Use the following syntax to update rows or add new data if the column exists
+```Python
+column_index = n
+for index, row in cyber_table.rows.items():
+    items = row.get_items()
+    existing_item = items[column_index]
+    new_item = "some calculation or something else"
+    items[column_index] = new_item
+    cyber_tables.rows[index].set_items(items)
+```
