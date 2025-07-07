@@ -1,6 +1,13 @@
 # Cyber Tables
 ## Changelog
 
+### 2025-07-07
+Update: open_csv() Ignore errors on string encode if not UTF-8
+New: Added function generate_static_column_data() to add in a single value to all tables
+New: Added rename_column() function to rename a olumn name
+new: Added print_row_detailed() function to print a single row mirroring the print method of print_columns()
+Bug: return_sub_row_by_index() used wrong index in return_row_items_by_index() function. Fixed     
+
 ### 2025-07-04
 Organisation: Refactored all code
 New: Added in dict support for aggregation functions in CyberTable and CyberTableGroup objects.    
