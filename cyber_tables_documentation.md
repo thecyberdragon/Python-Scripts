@@ -155,6 +155,9 @@ cyber_table.update_data_in_column(data:list, column_index = None, column_name = 
 
 # Adding a single static value to all rows under a column
 cyber_table.set_column_as_static_value("static value", column_index = n, column_name = "name", auto_analyse = True)
+
+# Replacing string values in a string column
+cyber_table.replace_string_data_in_column(value_to_replace, new_value, column_index = n, column_name = "name")
 ```
 
 Removing columns or values by column
