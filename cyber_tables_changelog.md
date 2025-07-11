@@ -3,6 +3,13 @@
 
 ### 2025-07-11
 Bug: Fixed issue with saving CSVs with commas in the cell contents     
+Bug: Fixed issue with remove_row_by_index decrementing the column count rather than row count    
+New: Added functionality to compare number of rows between two CyberTable objects using < <= > and >=
+New: Added functionality to compare number of rows and the row contents between two CyberTable objects with == and !=    
+New: Added functionality to calculate the modulus of a CyberTable row count using %    
+New: Added functionality to combine two CybeTable objects of matching columns together with +    
+New: Added functionality to cubtract matching rows from a second CybeTable object using new_table = table_1 - table_2        
+Update: Added reset_indexes bool to remove_row_by_index to prevent that happening     
 
 ### 2025-07-07
 Update: open_csv() Ignore errors on string encode if not UTF-8 and trim_excess_columns = True added to function to handle wonky columns with no data    
