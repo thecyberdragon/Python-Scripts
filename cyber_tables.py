@@ -65,6 +65,126 @@ class CyberTable():
         self.row_count = 0
         self.last_row_index = None
         
+    ### Comparrison dunder methods
+    def __lt__(self, other):
+        if type(other) is CyberTable:
+            this_count = self.return_row_count()
+            other_count = other.return_row_count()
+            if this_count < other_count: return True
+            else: return False
+            
+    def __le__(self, other):
+        if type(other) is CyberTable:
+            this_count = self.return_row_count()
+            other_count = other.return_row_count()
+            if this_count <= other_count: return True
+            else: return False
+            
+    def __gt__(self, other):
+        if type(other) is CyberTable:
+            this_count = self.return_row_count()
+            other_count = other.return_row_count()
+            if this_count > other_count: return True
+            else: return False
+            
+    def __ge__(self, other):
+        if type(other) is CyberTable:
+            this_count = self.return_row_count()
+            other_count = other.return_row_count()
+            if this_count >= other_count: return True
+            else: return False
+            
+    def __eq__(self, other):
+        if type(other) is CyberTable:
+            this_count = self.return_row_count()
+            other_count = other.return_row_count()
+            if this_count == other_count:                
+                for idx in self.rows.keys():
+                    row_match = None
+                    self_items = self.return_row_items_by_index(idx)
+                    other_items = self.return_row_items_by_index(idx)
+                    item_count = len(self_items)
+                    for item in range(item_count):
+                        self_item = self_items[item]
+                        other_item = other_items[item]
+                        if self_item == other_item:
+                            row_match = True
+                        else:
+                            row_match = False
+                            
+                        if row_match == False:
+                            return False                
+                return True                    
+            else: return False
+            
+    def __ne__(self, other):
+        if type(other) is CyberTable:
+            this_count = self.return_row_count()
+            other_count = other.return_row_count()
+            if this_count == other_count:                
+                for idx in self.rows.keys():
+                    row_match = None
+                    self_items = self.return_row_items_by_index(idx)
+                    other_items = self.return_row_items_by_index(idx)
+                    item_count = len(self_items)
+                    for item in range(item_count):
+                        self_item = self_items[item]
+                        other_item = other_items[item]
+                        if self_item == other_item:
+                            row_match = True
+                        else:
+                            row_match = False
+                            
+                        if row_match == False:
+                            return True                
+                return False                    
+            else: return True
+           
+    ### Arithmatic dunder methods
+    
+    def __add__(self, other):
+        if type(other) == CyberTable:
+            group = CyberTableGroup()
+            group.add_table(self)
+            group.add_table(other)
+            return group.merge_into_cyber_table()
+        else:
+            raise TypeError(f"Can only add to CyberTable objects together")
+        
+    def __sub__(self, other):
+        other_lookup = {}
+        for row in other.rows.values():
+            items = row.get_items()
+            other_first_item = items[0]
+            if other_first_item not in other_lookup:
+                other_lookup[other_first_item] = [items]
+            else:
+                other_lookup[other_first_item].append(items)
+        
+        removal_indexes = []
+        temp_copy = self.return_copy()
+        for idx, self_row in temp_copy.rows.items():
+            self_items = self_row.get_items()
+            first_item = self_items[0]
+            if first_item in other_lookup.keys():
+                if self_items in other_lookup[first_item]:
+                    removal_indexes.append(idx)
+                    
+        for index in removal_indexes:
+            temp_copy.remove_row_by_index(index, reset_indexes=False)
+            
+        temp_copy._internal_reset_row_count()    
+            
+        return temp_copy
+        
+    def __mod__(self, number):
+        row_count = self.return_row_count()
+        return row_count % number
+        
+    ### Len dunder method    
+    def __len__(self):
+        return self.return_row_count()    
+    
     ### Internal Working
     def _internal_increment_column_count(self):
         self.column_count += 1
@@ -78,6 +198,8 @@ class CyberTable():
         if self.return_row_count() < n:
             raise ValueError(f"Decrement value of {n} is higher than the count of all rows")
         self.row_count -= n
+    def _internal_reset_row_count(self):
+        self.row_count = len([row for row in self.rows])
     def return_column_count(self):
         return self.column_count       
     def return_row_count(self):
@@ -167,16 +289,22 @@ class CyberTable():
     def column_names(self) -> str:
         column_names = []
         for column in self.columns.values():
-            column_names.append(column.get_name())
+            longest_value = column.get_longest_value()
+            white_space = longest_value - len(str(column.get_name()))
+            each_side = (white_space // 2)
+            padding = each_side * " "
+            column_names.append(padding + column.get_name() + padding)
         return " | ".join(column_names)
     
     ### Columns (Internal)
     def _internal_add_column(self, column):
         if type(column) is Column:
+            column.set_longest_value(len(column.get_name()))
             self.columns[column.get_index()] = column        
             self._internal_increment_column_count()
         elif type(column) is str:
             new_column = Column(column, self.return_column_count())           
+            new_column.set_longest_value(len(column))
             self.columns[new_column.get_index()] = new_column        
             self._internal_increment_column_count()
        
@@ -302,6 +430,18 @@ class CyberTable():
                     return False
         return True
     
+    def _internal_update_column_longest_values(self):        
+        for idx, column in self.columns.items():
+            column_name_length = len(str(column.get_name()))
+            data = self.return_column_data(idx)
+            largest_item = column_name_length
+            for cell in data:
+                length = len(str(cell))
+                if length > largest_item:
+                    largest_item = length
+                    
+            column.set_longest_value(largest_item)            
+    
     ### Columnns
     def update_column_name(self, new_column_name, column_index = None, column_name = None):
         if column_index is not None:
@@ -388,13 +528,36 @@ class CyberTable():
             return None
         return output_data
     
+    def return_two_columns_data(self, column_indexes = [], column_names = [], include_nulls = True):
+        indexes = self._internal_validate_return_column_indexes(column_indexes=column_indexes, column_names=column_names)
+        if len(indexes) == 2:
+            index_one = indexes[0]
+            index_two = indexes[1]            
+
+            data_list_one = self.return_column_data(index_one)
+            data_list_two = self.return_column_data(index_two)
+            
+            if include_nulls == False:  
+                for itteration in len(data_list_one):
+                    data_item_one = data_list_two[itteration]
+                    data_item_two = data_list_two[itteration]
+                    if data_item_one == "NULL" or data_item_two == "NULL":
+                        data_list_one.pop(itteration)
+                        data_list_two.pop(itteration)
+                    
+            return data_list_one, data_list_two   
+            
+        else:
+            raise ValueError(f"Must input two valid indexes to return two column data lists")
+    
     def analyse_columns(self, column_index = None, column_name = None):
         for column in self.columns.values():
             name = column.get_name()
             index = column.get_index()
             data_type = column.get_data_type()
             allow_analyse = column.get_analyse_property()
-            
+            longest_value = column.get_longest_value()
+                        
             if column_index is not None and index != column_index:
                 continue
             
@@ -434,6 +597,8 @@ class CyberTable():
             else: data_type = "string"
             
             new_column = Column(name, index, data_type)
+            new_column.set_longest_value(longest_value)
+            
             self.columns[index] = new_column   
             
             self._internal_set_column_data_as_datatype(index, data_type)  
@@ -462,6 +627,7 @@ class CyberTable():
         self.reset_column_indexes()
         new_index = self.return_column_count()
         new_column = Column(name, new_index)
+        new_column.set_longest_value(len(new_column.get_name()))
         self.columns[new_index] = new_column
         self._internal_increment_column_count()
         entrees_needed = self.return_row_count()        
@@ -585,6 +751,28 @@ class CyberTable():
             self.reset_row_indexes()
             new_index = self.return_last_row_index() + 1
             self.rows[new_index] = row      
+        self._internal_update_longest_items_by_single_row(row)
+    
+    def _internal_update_longest_items_by_single_row(self, row:Row):
+        itteration = 0
+        items = row.get_items()
+        for idx, column in self.columns.items():
+            column_name = column.get_name()
+            if len(column_name) > column.get_longest_value():
+                self.columns[idx].set_longest_value(len(column_name))
+            
+            if len(column_name) > column.get_longest_value():
+                self.columns[idx].set_longest_value(len(column_name))
+                
+            current_longest_value = column.get_longest_value()
+            incoming_value = len(str(items[itteration]))    
+                     
+            if incoming_value > current_longest_value:
+                column_object = self.return_column_object_by_index(idx)
+                column_object.set_longest_value(incoming_value)
+                self.columns[idx] = column_object     
+                
+            itteration += 1
     
     def _internal_return_row_object_by_index(self, index) -> Row:
         if index in self.rows.keys():
@@ -649,12 +837,14 @@ class CyberTable():
         cleaned_row = replace_missing_with_nulls(row)
         row_object = Row(new_index, cleaned_row)
         self.rows[new_index] = row_object
-        self._internal_increment_row_count()
+        self._internal_increment_row_count()        
+        self._internal_update_longest_items_by_single_row(row_object)
 
     def update_row(self, row_index, updated_items):
         row_object = self._internal_return_row_object_by_index(row_index)
         row_object.items = updated_items
         self.rows[row_index] = row_object
+        self._internal_update_longest_items_by_single_row(row_object)
     
     def remove_rows_by_column_value(self, value, column_index = None, column_name = None):
         set_index = self.check_and_return_column_index(column_index=column_index, column_name=column_name)
@@ -677,10 +867,20 @@ class CyberTable():
         self._internal_decrement_rows_count_by_n(len(indexes_to_remove))            
         self.reset_row_indexes()
     
-    def remove_row_by_index(self, index:int):
+    def remove_row_by_index(self, index:int, reset_indexes = True, reset_longest_value = True):
         if index in self.rows.keys():
+            row_object = self.rows[index]
+            row_count = self.return_row_count()
             self.rows.pop(index)
-            self._internal_decrement_column_count()
+            after_count = self.return_row_count()
+            if row_count == after_count + 1:
+                self._internal_decrement_row_count()
+                if reset_indexes == True:
+                    self.reset_row_indexes()            
+            if reset_longest_value == True:
+                self._internal_update_column_longest_values()
+        else:
+            raise KeyError(f"Row index {index} not found in list of known row indexes")
     
     def return_row_items_by_index(self, index:int) -> list:
         if index in self.rows.keys():
@@ -808,29 +1008,43 @@ class CyberTable():
     def _internal_print_items(self, print_rows) -> str:
         for print_row in print_rows:
             string_list = []
+            itteration = 0
             for idx, column in self.columns.items():
-                value = print_row[idx]
+                value = print_row[itteration]
                 padded = self._internal_modify_string_to_whitespace_padding(value, idx)
-                string_list.append(padded)               
+                string_list.append(padded)          
+                itteration += 1     
             
             print(" | ".join(string_list))
         return print_rows  
     
     def _internal_modify_string_to_whitespace_padding(self, input_value, index) -> str:
-        length_dict = self._internal_get_length_dict()
+        column = self.return_column_object_by_index(index)
+        data_type = column.get_data_type()
+        longest_value = column.get_longest_value()     
+        
         input_string = str(input_value)
         input_length = len(input_string)
-        total_space = length_dict[index]
-        if input_length < total_space:
-            padding = total_space - input_length
-            return " " * int(padding / 2) + input_string + " " * int(padding / 2)
+        
+        if input_length != longest_value:
+            whitespace = longest_value - input_length
+            padding = whitespace // 2
+            
+            if data_type in ["string", "bool", "NULL"]:
+                return input_string + (whitespace * " ")
+            elif data_type in ["int", "decimal"]:
+                return (whitespace * " ") + input_string
+            elif data_type in ["date", "datetime"]:
+                return (padding * " ") + input_string + (padding * " ")
         else:
             return input_string
+        
+        
     
     def _internal_get_length_dict(self) -> dict:
         spacing_dict = {}
         for idx, column in self.columns.items():
-            length = len(column.get_name())
+            length = column.get_longest_value()
             spacing_dict[idx] = length
         return spacing_dict
     
@@ -840,7 +1054,7 @@ class CyberTable():
         columns = self.column_names()        
         print_rows = []
         for idx, row in self.rows.items():
-            if idx < number:
+            if len(print_rows) != number:
                 print_rows.append(row.get_items())       
         print(columns) 
         print(len(columns) * "-")
@@ -884,7 +1098,7 @@ class CyberTable():
         print(len(columns) * "-")
         self._internal_print_items(print_rows)    
     
-    def print(self):
+    def print(self):        
         print(f"\nPrinting all rows")
         columns = self.column_names()        
     
@@ -1584,6 +1798,7 @@ class CyberTable():
             
         new_cyber_table.reset_column_indexes()
         new_cyber_table.reset_row_indexes()    
+        new_cyber_table._internal_update_column_longest_values()
         
         return new_cyber_table                 
             
@@ -1710,9 +1925,14 @@ class CyberTable():
         name_list = [column.get_name() for column in columns]
         
         with open(target_file_path, "a") as writer:        
-            writer.write(delimiter.join(name_list) + "\n")
-            for row in self.rows.values():
+            writer.write(delimiter.join(name_list) + "\n")            
+            for row in self.rows.values():                
                 items = [str(item) for item in row.get_items()]
+                list_index = 0
+                for item in items:
+                    if "," in item:
+                        items[list_index] = "\"" + item + "\""
+                        list_index += 1
                 writer.write(delimiter.join(items))
                 writer.write("\n")
     
@@ -1783,12 +2003,11 @@ class CyberTable():
         aggregate_table = groups.aggregate(reference_column_indexes=column_index_list, calculation_column_indexes=calculation_column_index_list, calculations=calculations)
         return aggregate_table       
        
-       
 class CyberTableGroup():
     def __init__(self):
         self.table_count = 0
         self.groups = []
-        self.columns = []
+        self.columns = {}
         self.grouped_indexes = []
         
     ### Internal
@@ -1803,7 +2022,7 @@ class CyberTableGroup():
             data_type = column.get_data_type()
             
             list_index = None
-            for column in self.columns:
+            for column in self.columns.values():
                 column_index = column.get_index()
                 if column_index == idx:
                     list_index = column_index
@@ -1869,7 +2088,7 @@ class CyberTableGroup():
                 
                 new_column = Column(name, idx, data_type)
                 new_column.allow_analyse = permissions                
-                self.columns.append(new_column)
+                self.columns[idx] = column
                 
             self.groups.append(table)
             self._internal_increment_table_count()
@@ -2033,7 +2252,6 @@ class CyberTableGroup():
             raise IndexError(f"There are no tables in the group")
         for table in self.groups:
             table.random_selection(number)
-           
        
 # Normal Functions   
 
@@ -2242,4 +2460,5 @@ def help():
         print(f"Options for adding calculation columns: {calculation_column_options}")
         print(f"Options for aggrgating table data: {aggregation_options}")
         print(f"Options for printing data overview: {print_data_overview_options}")
+
 
