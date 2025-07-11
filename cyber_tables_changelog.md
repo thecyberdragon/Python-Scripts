@@ -1,6 +1,9 @@
 # Cyber Tables
 ## Changelog
 
+### 2025-07-11
+Bug: Fixed issue with saving CSVs with commas in the cell contents     
+
 ### 2025-07-07
 Update: open_csv() Ignore errors on string encode if not UTF-8 and trim_excess_columns = True added to function to handle wonky columns with no data    
 New: Added function generate_static_column_data() to add in a single value to all tables    
