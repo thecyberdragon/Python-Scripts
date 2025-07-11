@@ -89,6 +89,53 @@ n = cyber_table.return_column_count() -> int
 n = cyber_table.return_row_count() -> int
 ```
 
+### Comparrison and dunder support
+Comparing the row counts of two tables:
+```Python
+# Is row count of table 1 greater than row count of table 2
+cyber_table_one > cyber_table_two
+
+# Is row count of table 1 greater than or equal to row count of table 2
+cyber_table_one >= cyber_table_two
+
+# Is row count of table 1 less than row count of table 2
+cyber_table_one < cyber_table_two
+
+# Is row count of table 1 less than or equal to row count of table 2
+cyber_table_one <= cyber_table_two
+```
+
+Comparing row count and contents
+```Python
+# Do both tables contain the same row counts and same data
+cyber_table_one == cyber_table_two
+
+# Do both tables not contain the same row counts and same data
+cyber_table_one != cyber_table_two
+```
+
+Performing a modulos of a table row count
+```Python
+# What's the remainder of the table row count % number
+cyber_table % 5
+```
+
+Return the table row count using len()
+```Python
+# Return row count
+len(cyber_table)
+```
+
+Adding and subtracting
+```Python
+# Add two tables together (using a CyberTableGroup and merging back into a CyberTable)
+# Both tables must have identical column layouts
+cyber_table_three = cyber_table_one + cyber_table_two
+
+# Subtract rows from table one where they appear in table two
+cyber_table_three = cyber_table_one - cyber_table_two
+```
+
 ### SQL-style select
 This code is designed to mimic the SQL syntax un function form.    
 - Column names / indexes -> The columns to show in the final print
@@ -181,7 +228,10 @@ Returning column values
 cyber_table.return_column_index_by_name("name") -> int
 
 # Returns all column data as a list
-cyber_table.return_column_data(column_index = n, column_name = "name", include_nulls = True/False) -> list
+list_items = cyber_table.return_column_data(column_index = n, column_name = "name", include_nulls = True/False) -> list
+
+# Return all column data as two lists from two columns
+list_one, list_two = return_two_columns_data(column_indexes = [], column_names = [], include_nulls = True)
 
 # Returns the object of a column using the index
 cyber_table.return_column_object_by_index(n) -> Column
@@ -223,8 +273,8 @@ Removing rows
 # Remove rows where the rows contain the value in argument one is present in a specific column
 cyber_table.remove_rows_by_column_value(value, column_index = n, column_name = "name")
 
-# Remove a row by the row index
-cyber_table.remove_row_by_index(self, index:int)
+# Remove a row by the row index, reset indexes, and update the longest value property
+cyber_table.remove_row_by_index(self, index:int, reset_indexes = True, reset_longest_value = True)
 ```
 
 Returning row values
