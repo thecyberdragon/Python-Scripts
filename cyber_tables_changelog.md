@@ -14,6 +14,7 @@ Update: Added reset_indexes bool to remove_row_by_index to prevent that happenin
 New: Added in internal function to update longest_value property of a CyberTable    
 Update: Updated the print functions to left align strings, bool and nulls, right align numbers and center align dates     
 Update: Column widths now equal in prints according to the longest value in that column with white space padding    
+Added: return_two_columns_data() to return two column data rows to make making charts easier    
 
 
 ### 2025-07-07
@@ -61,10 +62,5 @@ Bug: ISO 8601 detection doesn't account for milliseconds - Fixed. Now checks the
 Bug: Returned sub tables didn't reset row or column indexes - Fixed. Reurning a sub table always resets all indexes.    
 
 ## Current plans
-- Add functionality to track the longest item in a column to easily display columns in maximum width
 - Do bug testing on a normal data analysis
-- Add in functions to return values for use in matplotlib and seaborn
-- Convert incoming data to float from scientific notation instead of string
-
-## WIP
  
