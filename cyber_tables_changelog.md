@@ -3,7 +3,7 @@
 
 ### 2025-07-11
 Bug: Fixed issue with saving CSVs with commas in the cell contents     
-Bug: Fixed issue with remove_row_by_index decrementing the column count rather than row count    
+Bug: Fixed issue with remove_row_by_index decrementing the column count rather than row count and reset_longest_value to update that    
 New: Added functionality to compare number of rows between two CyberTable objects using < <= > and >=
 New: Added functionality to compare number of rows and the row contents between two CyberTable objects with == and !=    
 New: Added functionality to calculate the modulus of a CyberTable row count using %    
@@ -11,6 +11,10 @@ New: Added functionality to combine two CybeTable objects of matching columns to
 New: Added functionality to cubtract matching rows from a second CybeTable object using new_table = table_1 - table_2        
 New: Added support for len(cyber_table) to return the row count    
 Update: Added reset_indexes bool to remove_row_by_index to prevent that happening     
+New: Added in internal function to update longest_value property of a CyberTable    
+Update: Updated the print functions to left align strings, bool and nulls, right align numbers and center align dates     
+Update: Column widths now equal in prints according to the longest value in that column with white space padding    
+
 
 ### 2025-07-07
 Update: open_csv() Ignore errors on string encode if not UTF-8 and trim_excess_columns = True added to function to handle wonky columns with no data    
@@ -58,7 +62,6 @@ Bug: Returned sub tables didn't reset row or column indexes - Fixed. Reurning a 
 
 ## Current plans
 - Add functionality to track the longest item in a column to easily display columns in maximum width
-- Add in dunder methods to make some features easier to use
 - Do bug testing on a normal data analysis
 - Add in functions to return values for use in matplotlib and seaborn
 - Convert incoming data to float from scientific notation instead of string
