@@ -395,7 +395,8 @@ cyber_table.find_meantingful_correlations()
 
 ```
 
-Data type compatibility
+**Data type compatibility**
+
 Data Types | min | max | range | mean | median | mode | sum | null | non-null | variance | std | covariance | correlation
 ---|---|---|---|---|---|---|---|---|---|---|---|---|---
 string | X | X | X | X | X | X | | X | X | | | 
