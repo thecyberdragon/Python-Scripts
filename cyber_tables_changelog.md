@@ -1,6 +1,19 @@
 # Cyber Tables
 ## Changelog
 
+### 2025-07-13
+New: Added a timecode data type for string starting in HH:MM:SS     
+New: Added a TimeCode class    
+New: normalist_timecode_column() converts timecode column data to TimeCode objects    
+New: Added the timecode data type to: min, max, range, mean, median, mode, sum, null and non_null calculations    
+New: Added timecode to the select() function    
+New: Added new logical comparisons "like" and "not_like" to select()    
+Fix: Fixed mistake with the threshold calculation column names    
+New: open_avid_ale() function added to open avid bin export files    
+New: round_trip_avid_ale_to_csv() function added to save ALE files as a cleaned CSV    
+New: column now has a return_copy() function   
+Bug: Fixed issue with the CyberTable.return_copy() function altering the input columns    
+
 ### 2025-07-11
 Bug: Fixed issue with saving CSVs with commas in the cell contents     
 Bug: Fixed issue with remove_row_by_index decrementing the column count rather than row count and reset_longest_value to update that    
