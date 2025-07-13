@@ -1,12 +1,111 @@
 import os
 import random
 import math
+import re
 from datetime import datetime, timedelta
 from datetime import time as dtime
 
 calculation_column_options = ["ntile", "rank", "individual_std", "individual_variance", "row_number", "+ days", "- days", "days_between", "above_threshold_percent", "below_threshold_percent"]
 aggregation_options = ["sum", "mean", "mode", "median", "max", "min", "nulls", "non_nulls", "row_counts", "standard_deviation", "variance", "range", "true_percentage", "false_percentage"]      
 print_data_overview_options = ["all", "numeric", "string", "bool", "date"]
+
+class TimeCode():
+    def __init__(self, input_datetime = None, input_seconds = None):
+        if input_seconds is not None:
+            self.value = self.seconds_to_timecode(input_seconds)
+            self.seconds = input_seconds
+        elif input_datetime is not None:
+            self.value = input_datetime
+            self.seconds = self.get_seconds()
+    def __str__(self):
+        return self.value
+    def __repr__(self):
+        return self.value
+    def __add__(self, other):
+        total_seconds = self.get_seconds() + other.get_seconds()
+        new_timecode = TimeCode(input_seconds=total_seconds)
+        return new_timecode
+    def __sub__(self, other):
+        total_seconds = self.get_seconds() - other.get_seconds()
+        if total_seconds < 0:
+            total_seconds = 0
+        new_timecode = TimeCode(input_seconds=total_seconds)
+        return new_timecode        
+    def __lt__(self, other):
+        self_seconds = self.get_seconds()
+        other_seconds = other.get_seconds()
+        return self_seconds < other_seconds
+    def __le__(self, other):
+        self_seconds = self.get_seconds()
+        other_seconds = other.get_seconds()
+        return self_seconds <= other_seconds
+    def __gt__(self, other):
+        self_seconds = self.get_seconds()
+        other_seconds = other.get_seconds()
+        return self_seconds > other_seconds
+    def __ge__(self, other):
+        self_seconds = self.get_seconds()
+        other_seconds = other.get_seconds()
+        return self_seconds >= other_seconds
+    def __eq__(self, other):
+        return str(self) == str(other)
+    def __ne__(self, other):
+        return str(self) != str(other)
+    def __mul__(self, other):
+        if type(other) != int and type(other) != float:
+            raise TypeError(f"Can only use an int or a float to calculate this")
+        self_seconds = self.get_seconds()        
+        total_seconds = self_seconds * other
+        new_timecode = TimeCode(input_seconds=total_seconds)
+        return new_timecode
+    def __truediv__(self, other):
+        if type(other) != int and type(other) != float:
+            raise TypeError(f"Can only use an int or a float to calculate this")
+        self_seconds = self.get_seconds()
+        total_seconds = self_seconds / other
+        new_timecode = TimeCode(input_seconds=total_seconds)
+        return new_timecode
+    def __floordiv__(self, other):
+        if type(other) != int and type(other) != float:
+            raise TypeError(f"Can only use an int or a float to calculate this")
+        self_seconds = self.get_seconds()
+        total_seconds = self_seconds // other
+        new_timecode = TimeCode(input_seconds=total_seconds)
+        return new_timecode
+    def __mod__(self, other):
+        self_seconds = self.get_seconds()
+        other_seconds = other.get_seconds()
+        remaining_seconds = self_seconds % other_seconds
+        new_timecode = TimeCode(input_seconds=remaining_seconds)
+        return new_timecode
+    def __iadd__(self, other):
+        self.seconds = self.get_seconds() + other.get_seconds()
+        self.value = self.seconds_to_timecode(self.seconds)
+        return self
+    def __isub__(self, other):
+        self.seconds = self.get_seconds() - other.get_seconds()
+        self.value = self.seconds_to_timecode(self.seconds)
+        return self
+    def __pow__(self, other):
+        seconds = self.get_seconds()
+        seconds = seconds ** other
+        new_timecode = TimeCode(input_seconds=seconds)
+        return new_timecode
+    def __hash__(self):
+        return hash(self.value)
+    
+    def get_seconds(self):
+        hours, minutes, seconds = str(self.value).split(":")
+        hours = int(hours)
+        minutes = int(minutes)
+        seconds = int(seconds)
+        return seconds + (minutes * 60) + (hours * 60 * 60)
+    def seconds_to_timecode(self, input_seconds):
+        hours = input_seconds // 3600
+        remainder = input_seconds % 3600
+        minutes = remainder // 60
+        seconds = remainder % 60
+        return str(hours).rjust(2, "0") + ":" + str(minutes).rjust(2, "0") + ":" + str(seconds).rjust(2, "0")
 
 class Column():
     def __init__(self, name, index, data_type = None):
@@ -39,8 +138,12 @@ class Column():
         return self.longest_value
     def print(self):
         print(f"Index: {self.get_index()}, Name: {self.get_name()}, Data Type: {self.get_data_type()}, Unlocked: {self.get_analyse_property()}, Longest value: {self.get_longest_value()}")
-         
-    # Accepted data types = int, decimal, bool, date, datetime, string, null
+    def return_copy(self):
+        new_column = Column(self.name, self.index, self.data_type)
+        new_column.allow_analyse = self.allow_analyse
+        new_column.longest_value = self.longest_value
+        return new_column
+    # Accepted data types = int, decimal, bool, date, datetime, string, null, timecode
         
 class Row():
     def __init__(self, index, items):
@@ -225,15 +328,13 @@ class CyberTable():
     def print_columns(self):
         print("\nPrinting columns")
         for column in self.columns.values():
-            column.print()
-            #print(f"Index: {column.get_index()}, Name: {column.get_name()}, Data Type: {column.get_data_type()}")
+            column.print()            
 
     def print_data_overview(self, filter = "all"):
         print_string = "Data Overview by column"
         for idx, column in self.columns.items():
             name = column.get_name()
-            data_type = column.get_data_type()
-            
+            data_type = column.get_data_type()            
             
             print_string += f"\n\nIndex: {idx}, {name}, Data Type: {data_type}\n\t"      
 
@@ -294,7 +395,7 @@ class CyberTable():
             each_side = (white_space // 2)
             padding = each_side * " "
             column_names.append(padding + column.get_name() + padding)
-        return " | ".join(column_names)
+        return " |  ".join(column_names)
     
     ### Columns (Internal)
     def _internal_add_column(self, column):
@@ -434,13 +535,14 @@ class CyberTable():
         for idx, column in self.columns.items():
             column_name_length = len(str(column.get_name()))
             data = self.return_column_data(idx)
-            largest_item = column_name_length
+            largest_item = column.get_longest_value()
+            if column_name_length > largest_item:
+                largest_item = column_name_length
             for cell in data:
                 length = len(str(cell))
-                if length > largest_item:
-                    largest_item = length
-                    
-            column.set_longest_value(largest_item)            
+                if length > largest_item:                    
+                    largest_item = length                    
+            self.columns[idx].set_longest_value(largest_item)            
     
     ### Columnns
     def update_column_name(self, new_column_name, column_index = None, column_name = None):
@@ -574,6 +676,7 @@ class CyberTable():
             is_bool_count = 0          
             is_date_count = 0
             is_datetime_count = 0
+            is_timecode_count = 0
             null_count = 0
             for data in column_data:
               
@@ -583,6 +686,7 @@ class CyberTable():
                     elif is_bool(data): is_bool_count += 1
                     elif is_date(data): is_date_count += 1
                     elif is_datetime(data): is_datetime_count += 1
+                    elif is_timecode(data): is_timecode_count += 1
                     checks += 1 
                 else: 
                     null_count += 1
@@ -594,6 +698,7 @@ class CyberTable():
             elif checks == is_bool_count + null_count: data_type = "bool"
             elif checks == is_date_count + null_count: data_type = "date"
             elif checks == is_datetime_count + null_count: data_type = "datetime"
+            elif checks == is_timecode_count + null_count: data_type = "timecode"
             else: data_type = "string"
             
             new_column = Column(name, index, data_type)
@@ -602,6 +707,25 @@ class CyberTable():
             self.columns[index] = new_column   
             
             self._internal_set_column_data_as_datatype(index, data_type)  
+            
+        self.normalise_timecode_columns()
+       
+    def normalise_timecode_columns(self):
+        for idx, column in self.columns.items():
+            data_type = column.get_data_type()
+            if data_type == "timecode":
+                for row_idx, row in self.rows.items():
+                    items = row.get_items()
+                    value = items[idx]
+                    if value != "NULL":
+                        if isinstance(value, TimeCode) == True:
+                            continue
+                        elif len(str(value)) != 8 and re.match("[0-9]{2}:[0-9]{2}:[0-9]{2}", str(value)) is not None:
+                            value = value[:8]                            
+                            timecode_object = TimeCode(value)
+                            items[idx] = timecode_object
+                            self.update_row(row_idx, items)
+
                 
     def remove_row_data_by_column_index(self, removal_index):
         if removal_index > (self.column_count - 1):
@@ -662,8 +786,7 @@ class CyberTable():
             new_item = old_item.replace(value_to_replace, new_value)
             items[index] = new_item
             if old_item != new_item and old_item != "NULL":
-                self.rows[idx].set_items(items)      
-            
+                self.rows[idx].set_items(items)       
     
     def update_data_in_column(self, data:list, column_index = None, column_name = None, auto_analyse = True):
         input_row_length = len(data)
@@ -744,35 +867,37 @@ class CyberTable():
             return counter       
 
     ### Rows (Internal)
-    def _internal_add_row(self, row:Row, index = None):       
+    def _internal_add_row(self, row:Row, index = None):    
         if index is not None:
             self.rows[index] = row
         else:
             self.reset_row_indexes()
             new_index = self.return_last_row_index() + 1
-            self.rows[new_index] = row      
+            self.rows[new_index] = row              
         self._internal_update_longest_items_by_single_row(row)
+        self._internal_increment_row_count()
     
     def _internal_update_longest_items_by_single_row(self, row:Row):
         itteration = 0
         items = row.get_items()
+
+        updates = {}
+
         for idx, column in self.columns.items():
-            column_name = column.get_name()
-            if len(column_name) > column.get_longest_value():
+            column_name = column.get_name()  
+            current_longest_value = column.get_longest_value()
+            
+            if len(column_name) > current_longest_value:
                 self.columns[idx].set_longest_value(len(column_name))
             
-            if len(column_name) > column.get_longest_value():
-                self.columns[idx].set_longest_value(len(column_name))
-                
-            current_longest_value = column.get_longest_value()
-            incoming_value = len(str(items[itteration]))    
-                     
-            if incoming_value > current_longest_value:
-                column_object = self.return_column_object_by_index(idx)
-                column_object.set_longest_value(incoming_value)
-                self.columns[idx] = column_object     
-                
-            itteration += 1
+            try:
+                incoming_value = len(str(items[itteration]))  
+                if incoming_value > current_longest_value:
+                    self.columns[idx].set_longest_value(incoming_value)                                                 
+            except:
+                ...                 
+            itteration += 1   
+
     
     def _internal_return_row_object_by_index(self, index) -> Row:
         if index in self.rows.keys():
@@ -780,6 +905,7 @@ class CyberTable():
         else: raise KeyError(f"Row index {index} not in list of known row indexes")
     
     def _internal_return_rows_by_value_recursive(self, input_rows:dict, column_indexes:list, values:list) -> dict:
+        
         if column_indexes == []:
             return input_rows
         
@@ -797,19 +923,17 @@ class CyberTable():
             items = row.get_items()        
             
             item_one = items[column_index]
-            item_two = value_filter
-            
-            non_exact_filter_types = [int, float, datetime, datetime.date]
+            item_two = value_filter            
             
             if comparrison in ["<", ">", "<=", ">="]:
                 if item_one == "NULL" or item_two == "NULL":
                     continue
-                if data_type not in ["int", "decimal", "date", "datetime"]:
+                if data_type not in ["int", "decimal", "date", "datetime", "timecode"]:
                     raise ValueError(f"Cannot compare non-numeric or datetime-like data without exact comparrisons != and =")     
-            
+                          
             if comparrison == "=" and items[column_index] == value_filter:
                 filtered_rows[idx] = row
-            if comparrison == "!=" and items[column_index] != value_filter:
+            elif comparrison == "!=" and items[column_index] != value_filter:
                 filtered_rows[idx] = row
             elif comparrison == "<" and items[column_index] < value_filter:
                 filtered_rows[idx] = row
@@ -819,11 +943,24 @@ class CyberTable():
                 filtered_rows[idx] = row
             elif comparrison == ">=" and items[column_index] >= value_filter:
                 filtered_rows[idx] = row
+            elif comparrison == "like":
+                filter_string = str(value_filter).lower()
+                value_string = str(items[column_index]).lower()                
+                if re.search(filter_string, value_string) is not None:                                   
+                    filtered_rows[idx] = row               
+            elif comparrison == "not_like":
+                filter_string = str(value_filter).lower()
+                value_string = str(items[column_index]).lower()                
+                if re.search(filter_string, value_string) is None:                                   
+                    filtered_rows[idx] = row    
+
+                
         
         if len(column_indexes) == 1:
             return self._internal_return_rows_by_value_recursive(filtered_rows, [], [])
         else:
             return self._internal_return_rows_by_value_recursive(filtered_rows, column_indexes[1:], values[1:])
+        
     
     ### Rows   
     def add_row(self, row:list):
@@ -922,9 +1059,9 @@ class CyberTable():
         index = self.check_and_return_column_index(column_index = column_index, column_name = column_name)
         if index is None:
             raise ValueError(f"Column name or index not recognised in list of known columns")
-        
-        distinct_values = self.return_distinct_column_values(column_index=index)    
-        
+
+        distinct_values = self.return_distinct_column_values(column_index=index)   
+
         if mode == "desc":
             distinct_values.reverse()
         
@@ -937,8 +1074,8 @@ class CyberTable():
         new_dict = {}
         
         pop_indexes = []
-        
-        while rows_length != len(new_dict):      
+
+        while rows_length != len(new_dict):   
             for value in distinct_values:
                 for idx, row in row_dict.items():
                     items = row.get_items()
@@ -950,7 +1087,8 @@ class CyberTable():
                 for idx in pop_indexes:
                     row_dict.pop(idx)
                 pop_indexes = []
-                        
+                
+
         self.rows = {}
         self.rows = new_dict      
 
@@ -1009,11 +1147,12 @@ class CyberTable():
         for print_row in print_rows:
             string_list = []
             itteration = 0
+            
             for idx, column in self.columns.items():
                 value = print_row[itteration]
                 padded = self._internal_modify_string_to_whitespace_padding(value, idx)
                 string_list.append(padded)          
-                itteration += 1     
+                itteration += 1    
             
             print(" | ".join(string_list))
         return print_rows  
@@ -1034,12 +1173,10 @@ class CyberTable():
                 return input_string + (whitespace * " ")
             elif data_type in ["int", "decimal"]:
                 return (whitespace * " ") + input_string
-            elif data_type in ["date", "datetime"]:
+            elif data_type in ["date", "datetime", "timecode"]:
                 return (padding * " ") + input_string + (padding * " ")
         else:
             return input_string
-        
-        
     
     def _internal_get_length_dict(self) -> dict:
         spacing_dict = {}
@@ -1105,15 +1242,15 @@ class CyberTable():
         print(columns)  
         print(len(columns) * "-")
         
-        print_items = [row.get_items() for row in self.rows.values()]        
+        print_items = [row.get_items() for row in self.rows.values()]      
         self._internal_print_items(print_items)
     
     def select(self, column_indexes = [], column_names = [], where_by_index = {}, where_by_name = {}, order_by = [], order_mode = "asc", limit = None, return_subtable = False):
         reference_indexes = self._internal_validate_return_column_indexes(column_indexes = column_indexes, column_names = column_names)
                 
         reference_values = []
-        check_values = []     
-
+        check_values = []  
+  
         if where_by_index != {}:
             for column, value in where_by_index.items():                    
                 index = self.check_and_return_column_index(column)
@@ -1137,7 +1274,7 @@ class CyberTable():
             if type(check_val) == list:
                 logic = check_val[0]
             
-            if data_type not in ["int", "decimal", "date", "datetime"] and logic not in ["!=", "="]:
+            if data_type not in ["int", "decimal", "date", "datetime", "timecode"] and logic not in ["!=", "=", "like", "not_like"]:
                 raise ValueError(f"Logical comparrison {logic} not allowed for data type {data_type} on column index {column_index}")                    
             
         subtable = self.return_sub_table_by_row_filters(values=check_values, column_indexes=reference_values)
@@ -1171,6 +1308,7 @@ class CyberTable():
             index = test_index
         column_object:Column = self.columns[index]
         data_type = column_object.data_type
+
         if data_type != "NULL":
             
             last_max = None
@@ -1181,7 +1319,8 @@ class CyberTable():
             true_count = 0
             false_count = 0
             
-            values = self.return_column_data(column_index=index)            
+            values = self.return_column_data(column_index=index)     
+      
             for value in values:
                 #print(f"Comparing {value} to {last_max}")
                 this_value = None
@@ -1193,6 +1332,8 @@ class CyberTable():
                         if value == True: true_count += 1
                         elif value == False: false_count += 1
                     elif data_type == "date" or data_type == "datetime":
+                        this_value = value
+                    elif data_type == "timecode":
                         this_value = value
                         
                     if this_value is not None and last_max is None and mode == "max": 
@@ -1251,6 +1392,9 @@ class CyberTable():
         if data_type is datetime:
             difference:timedelta = max - min
             return difference
+
+        if isinstance(min, TimeCode):
+            return max - min
         
         raise ValueError(f"Data type of column data not compatible with use of range. Must be int, decimal, string, date or datetime")
    
@@ -1290,6 +1434,12 @@ class CyberTable():
                 string_length_list = [len(value) for value in values_only]
                 total = sum(string_length_list)
                 return total / len(values_only)
+            elif isinstance(values_only[0], TimeCode):
+                total = 0
+                for value in values_only:
+                    total += value.get_seconds()
+                new_timecode = TimeCode(input_seconds=total)
+                return new_timecode / len(values_only)
             elif dtype is bool:
                 raise ValueError("Cannot return the mean value of a bool column")
             elif column_type == "date" or column_type == "datetime":
@@ -1306,6 +1456,12 @@ class CyberTable():
             if dtype is int or dtype is float:
                 total = sum(values_only)
                 return total
+            elif isinstance(values_only[0], TimeCode):
+                total = 0
+                for value in values_only:
+                    total += value.get_seconds()
+                new_timecode = TimeCode(input_seconds=total)
+                return new_timecode
             else:
                 return None      
         
@@ -1319,19 +1475,18 @@ class CyberTable():
             dtype = type(values_only[0])
             column_type = self.return_column_object_by_index(index).get_data_type()
             
-            if dtype is int or dtype is float:
+            if dtype is int or dtype is float or isinstance(values_only[0], TimeCode):
                 sorted_list = sorted(values_only) 
             elif dtype is str:
                 string_length_list = [len(value) for value in values_only]
                 sorted_list = sorted(string_length_list)      
             elif column_type == "date" or column_type == "datetime":
-                sorted_list = sorted(values_only)
-                
+                sorted_list = sorted(values_only) 
             if len(sorted_list) % 2 == 0:
                 value_one = sorted_list[mid_point - 1]
                 value_two = sorted_list[mid_point]
                 
-                if dtype is int or dtype is float or dtype is str:
+                if dtype is int or dtype is float or dtype is str or isinstance(values_only[0], TimeCode):
                     return ( value_one + value_two ) / 2
                 elif column_type == "date" or column_type == "datetime":
                     datetime_difference = value_two - value_one
@@ -1370,9 +1525,9 @@ class CyberTable():
             for value in values:
                 distance = mean_value - value
                 variance = distance ** 2
-                variances.append(variance)
-            return sum(variances) / len(variances)
-                    
+                variances.append(variance)                
+           
+            return sum(variances) / len(variances)                    
         else:
             return ValueError(f"Column at index {found_column_index} is not an int or a decimal")                
         
@@ -1495,13 +1650,13 @@ class CyberTable():
         if calculation == "ntile":
             if calculation_value is None or type(calculation_value) is not int:
                 raise ValueError(f"Ntile calculations require a calculation value in the form of an integer")
-            if reference_data_type not in ["int", "decimal", "date","datetime"]:
+            if reference_data_type not in ["int", "decimal", "date","datetime", "timecode"]:
                 raise ValueError(f"Ntile calculations require a reference column of int, decimal, date or datetime")
             new_column.set_name(f"calculated_ntile_{calculation_value}")    
-            new_column.set_data_type("int")    
+            new_column.set_data_type("int")           
             
             self.order_rows_by_column(reference_index)            
-            
+
             row_count = self.row_count
             buckets = calculation_value
             steps = math.floor(row_count / buckets)
@@ -1530,7 +1685,7 @@ class CyberTable():
                     self.update_row(row_idx, row_items)
                 
         elif calculation == "rank":
-            if reference_data_type not in ["int", "decimal", "date","datetime"]:
+            if reference_data_type not in ["int", "decimal", "date","datetime", "timecode"]:
                 raise ValueError(f"Rank calculations require a reference column of int, decimal, date or datetime")
             new_column.set_name("calculated_rank")
             new_column.set_data_type("int")               
@@ -1665,7 +1820,7 @@ class CyberTable():
         elif calculation == "above_threshold_percent":
             if calculation_value is None or (type(calculation_value) is not int and type(calculation_value) is not float) :
                 raise ValueError(f"Threshold calculations require a calculation value in the form of an integer")
-            if reference_data_type not in ["int", "decimal", "date","datetime"]:
+            if reference_data_type not in ["int", "decimal", "date","datetime", "timecode"]:
                 raise ValueError(f"Threshold calculations require a reference column of int, decimal, date or datetime")
             new_column.set_name("calculated_above_theshold")
             new_column.set_data_type("bool")  
@@ -1673,8 +1828,16 @@ class CyberTable():
             max = self.return_max_value(reference_index)
             min = self.return_min_value(reference_index)
             difference = max - min
+                        
+            if reference_data_type == "timecode":
+                difference = TimeCode(difference)
+                difference = difference.get_seconds()
             
             threshold = difference * (calculation_value / 100)
+            
+            if reference_data_type == "timecode":
+                threshold = int(threshold)
+                threshold = TimeCode(input_seconds=threshold)
 
             new_column.set_name(f"calculated_above_theshold_{calculation_value}_percent")            
             
@@ -1687,7 +1850,7 @@ class CyberTable():
                         if value > threshold:
                             threshold_bool = True
                         else: threshold_bool = False
-                    elif reference_data_type in ["date", "datetime"]:
+                    elif reference_data_type in ["date", "datetime", "timecode"]:                        
                         if value > (min + threshold):
                             threshold_bool = True
                         else: threshold_bool = False
@@ -1700,7 +1863,7 @@ class CyberTable():
         elif calculation == "below_threshold_percent":
             if calculation_value is None or type(calculation_value) is not int:
                 raise ValueError(f"Threshold calculations require a calculation value in the form of an integer")
-            if reference_data_type not in ["int", "decimal", "date","datetime"]:
+            if reference_data_type not in ["int", "decimal", "date","datetime", "timecode"]:
                 raise ValueError(f"Threshold calculations require a reference column of int, decimal, date or datetime")
             new_column.set_name("calculated_below_theshold")
             new_column.set_data_type("bool")     
@@ -1708,10 +1871,18 @@ class CyberTable():
             max = self.return_max_value(reference_index)
             min = self.return_min_value(reference_index)
             difference = max - min
+
+            if reference_data_type == "timecode":
+                difference = TimeCode(difference)
+                difference = difference.get_seconds()
             
             threshold = difference * (calculation_value / 100)
+            
+            if reference_data_type == "timecode":
+                threshold = int(threshold)
+                threshold = TimeCode(input_seconds=threshold)
 
-            new_column.set_name(f"calculated_above_theshold_{calculation_value}_percent")            
+            new_column.set_name(f"calculated_below_theshold_{calculation_value}_percent")            
             
             for idx, row in self.rows.items():
                 items = row.items
@@ -1722,7 +1893,7 @@ class CyberTable():
                         if value < threshold:
                             threshold_bool = True
                         else: threshold_bool = False
-                    elif reference_data_type in ["date", "datetime"]:
+                    elif reference_data_type in ["date", "datetime", "timecode"]:                        
                         if value < (min + threshold):
                             threshold_bool = True
                         else: threshold_bool = False
@@ -1906,10 +2077,10 @@ class CyberTable():
         for idx, row in self.rows.items():
             new_table._internal_add_row(row, idx)
         
-        for idx, column in self.columns.items():
-            data = self.return_column_data(idx)  
-            new_table._internal_add_column(column)      
-             
+        for idx, column in self.columns.items(): 
+            new_column = column.return_copy()
+            new_table._internal_add_column(new_column)      
+        
         return new_table
     
     ### File Operations
@@ -1964,6 +2135,7 @@ class CyberTable():
         
         copy = self.return_copy()
         sub_table_list = self._internal_return_sub_table_groups_recursive([copy], approved_indexes)      
+
         
         table_group = CyberTableGroup()
         for table in sub_table_list:
@@ -1979,13 +2151,13 @@ class CyberTable():
         calculation_column_index_list = []
         calculations = calculations
                 
-        if command_dict != {}:            
+        if command_dict != {}:                        
             calculations = []
-            for identifier, calculation in command_dict.items():
-                if identifier is int:                    
-                    index = self.check_and_return_column_index(identifier)
+            for identifier_value, calculation in command_dict.items():                
+                if isinstance(identifier_value, int):                    
+                    index = self.check_and_return_column_index(identifier_value)
                 else:
-                    index = self.return_column_index_by_name(identifier)
+                    index = self.return_column_index_by_name(identifier_value)
                     
                 calculation_column_index_list.append(index)
                 calculations.append(calculation)
@@ -1995,10 +2167,11 @@ class CyberTable():
                
         if len(calculation_column_index_list) != len(calculations):
             raise KeyError(f"Count of columns {len(column_index_list)} does not match the number of calculations {len(calculations)}")        
+        
         for index in column_index_list:
             if index in calculation_column_index_list:
                 raise KeyError(f"Reference columns cannot also be calculation columns, they bust be distinctly separate")        
-      
+        
         groups = self.return_groups(column_index_list)
         aggregate_table = groups.aggregate(reference_column_indexes=column_index_list, calculation_column_indexes=calculation_column_index_list, calculations=calculations)
         return aggregate_table       
@@ -2050,16 +2223,9 @@ class CyberTableGroup():
     def _internal_validate_return_column_indexes(self, column_indexes = [], column_names = [], raise_error = True) -> list:
         index_list = []
         if column_indexes != []:
-            for column_object in column_indexes:
-                index = column_object.get_index()
-                found = False
-                for column in self.columns:
-                    test_index = column.get_index()
-                    if test_index == index:
-                        found = True              
-                        index_list.append(index)                                        
-                if found == False:
-                    if raise_error == True: raise KeyError(f"Index {index} not in list of known column indexes")
+            for index in column_indexes:
+                if index in self.columns.keys():
+                    index_list.append(index)           
         elif column_names != []:
             for name in column_names:
                 index = self._internal_return_column_index_by_name(name)
@@ -2126,22 +2292,20 @@ class CyberTableGroup():
                     
                 calculation_column_indexes.append(index)
                 calculations.append(calculation)
-                
+        
         elif calculation_column_indexes != [] or calculation_column_names != []:
             calculation_column_indexes = self._internal_validate_return_column_indexes(column_indexes=calculation_column_indexes, column_names=calculation_column_names, raise_error=True)
-    
+        
         if len(calculation_column_indexes) != len(calculations):
             raise KeyError(f"Count of columns {len(calculation_column_indexes)} does not match the number of calculations {len(calculations)}")
         
-        for index in reference_column_index_list:
-            if index in calculation_column_indexes:
-                raise KeyError(f"Reference columns cannot also be calculation columns, they bust be distinctly separate")            
-        
         aggregate_cybertable = CyberTable()
         
-        for idx in calculation_column_indexes:
-            name = self._internal_return_column_object_by_index(idx).get_name()
-            aggregate_cybertable._internal_add_column(name)
+        for index in reference_column_index_list:
+            if index in calculation_column_indexes:
+                raise KeyError(f"Reference columns cannot also be calculation columns, they bust be distinctly separate")         
+            reference_name = self._internal_return_column_object_by_index(index).get_name()
+            aggregate_cybertable._internal_add_column(reference_name)     
             
         for idx in range(len(calculation_column_indexes)):
             calculation_column_index = calculation_column_indexes[idx]
@@ -2213,8 +2377,12 @@ class CyberTableGroup():
             new_row = Row(row_index, aggregate_row)            
             aggregate_cybertable._internal_add_row(new_row, row_index)
             row_index += 1
-            
+        
+        aggregate_cybertable.reset_column_indexes()
+        aggregate_cybertable.reset_row_indexes()   
         aggregate_cybertable.analyse_columns()
+        aggregate_cybertable._internal_update_column_longest_values()
+        
         return aggregate_cybertable
               
     def add_batch_row_calculations(self, g_reference_column_index = None, g_reference_column_name = None, g_calculation = None, g_calculation_value = None):
@@ -2354,6 +2522,14 @@ def is_iso_8601(input):
                 return False
     return False
 
+def is_timecode(input):
+    string_input = str(input)
+    is_tc_with_frames = re.match("[0-9]{2}:[0-9]{2}:[0-9]{2}:[0-9]{2}", string_input)    
+    is_tc_no_frames = re.match("[0-9]{2}:[0-9]{2}:[0-9]{2}", string_input)
+    if is_tc_with_frames is not None or is_tc_no_frames is not None:
+        return True
+    return False
+
 ### Nulls    
 def replace_missing_with_nulls(input_list:list):
         return_list = []
@@ -2428,7 +2604,6 @@ def open_csv(file, delimiter = ",", null_excess_columns = True) -> CyberTable:
                 
         # Detect data types
         cyber_table.analyse_columns()    
-                
         # Return the table object
         return cyber_table
     else:
@@ -2452,7 +2627,56 @@ def round_trip_csv(file, delimiter = ",", convert_iso_8601 = True):
                 
     cyber_table.save_as_csv(directory, new_file, delimiter=delimiter)
 
+def open_avid_ale(file):
+    if os.path.exists(file) == False:
+        raise ValueError(f"File does not exist {file}")
+    
+    with open(file, "r") as open_file:
+        lines = open_file.readlines()
+        headers = []
+        data = []
+        itteration = 0
+        data_found = False
+        for line in lines:
+            if line.startswith("Column"):
+                headers = [header for header in lines[itteration+1].split("\t")]
+            if data_found == True:
+                data.append([cell for cell in line.split("\t")])
+            if line.startswith("Data"):
+                data_found = True
+            itteration += 1
+
+        if headers[-1] == "\n":
+            headers = headers[:-1]
+            
+        cyber_table = CyberTable()
+        for header in headers:
+            cyber_table._internal_add_column(header)
+        
+        for entry in data:
+            row_data = entry
+            if row_data[-1] == "\n": row_data = row_data[:-1]
+            cyber_table.add_row(row_data)
+
+        cyber_table.analyse_columns()       
+        return cyber_table
+
+def round_trip_avid_ale_to_csv(file):
+    cyber_table = open_avid_ale(file)
+    file_name = str(file).split("\\")[-1]    
+    file_name_no_ext = file_name[:-4]
+    directory = file[:len(file) - (len(file_name))]
+    cyber_table.save_as_csv(directory, file_name_no_ext + "_converted")
+
 ### Help
+def explaine_variables(inputs = {}):
+    # inputs must be {"human readable name":object}
+    output_string = ""
+    for name, input in inputs.items():
+        input_type = type(input)
+        output_string += "Name: " + str(name) + " Value: " + str(input) + " Type: " + str(input_type) + "\n"
+    return output_string
+
 def help():
         documentation = "https://github.com/thecyberdragon/Python-Scripts/blob/main/cyber_tables_documentation.md"
         print(f"====== Cyber Tables ======")
@@ -2460,5 +2684,3 @@ def help():
         print(f"Options for adding calculation columns: {calculation_column_options}")
         print(f"Options for aggrgating table data: {aggregation_options}")
         print(f"Options for printing data overview: {print_data_overview_options}")
-
-
