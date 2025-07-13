@@ -28,6 +28,7 @@ Cyber tables is made up of four classes / objects:
 - decimal -> Floating point numbers with a decimal point
 - date -> Date values in the format YYYY-MM-DD
 - datetime -> Date time values in the format YYYY-MM-DD HH:MM:SS
+- timecode -> timecode in the format of HH:MM:SS. Uses a custom TimeCode class    
 
 ### Initialising a table
 Opening a CSV as a cyber_table
@@ -35,6 +36,12 @@ Opening a CSV as a cyber_table
 import cyber_tables
 # option to change delimiter and null extra columns by inserting "NULL" into all rows
 cyber_table = open_csv("file_path", delimiter = ",", null_excess_columns = True)
+```
+
+Opening an Avid ALE as a cyber table
+```Python
+import cyber_tables
+cyber_table = open_avid_ale("file_path")
 ```
 
 Return a copy of a table
@@ -49,9 +56,13 @@ cyber_table.save_as_csv(directory, file_name, delimiter = ",")
 ```
 
 ### Automatic cleaning
-Cyber tables provides a way to import a CSV, replace all empty values with NULL and optionally convert all ISO 8601 datetimes to a normal YYYY-MM-DD HH:MM:SS date time format. This function will output the CSV next to the original using the file name: filename_cleaned.csv.
+Cyber tables provides a way to import a CSV or ALE, replace all empty values with NULL and optionally convert all ISO 8601 datetimes to a normal YYYY-MM-DD HH:MM:SS date time format. This function will output the CSV next to the original using the file name: filename_cleaned.csv.
 ```Python
+# Round trip CSV to cleaned CSV
 round_trip_csv("file_path", delimiter = ",", convert_iso_8601 = True)
+
+# Reound trip an ALE to cleaned CSV
+round_trip_avid_ale_to_csv("file_path")
 ```
 
 ### Viewing table data
@@ -156,7 +167,8 @@ cyber_table.select(column_indexes=[1,5,7,8], where_by_index = {2:"dennis", 5:Tru
 # "age":24 -> age == 24, "age":["<",24] -> age < 24. By default, == is the comparrison used unless a valid 2-item list is used in place of a single value.
 
 # Options
-# "=", "!=", "<", "<=", ">", ">="
+# "=", "!=", "<", "<=", ">", ">=", "like", "not_like"
+# Like and not_like will check all items as strings
 ```
 
 ### Indexes
@@ -556,4 +568,59 @@ for index, row in cyber_table.rows.items():
     new_item = "some calculation or something else"
     items[column_index] = new_item
     cyber_tables.rows[index].set_items(items)
+```
+
+### TimeCode class
+The TimeCode class is a custom class to be used as an object for the timecode data type.    
+It checks whether a string starts with nn:nn:nn using regex then converts that to a TimeCode object.    
+```Python
+# Creating a new TimeCode object
+timecode = TimeCode("HH:MM:SS")
+
+# Creating a timecode using seconds
+timecode = TimeCode(input_seconds = n)
+```
+
+Printing values is super easy
+```Python
+print(timecode_1)
+# output: HH:MM:SS
+```
+
+Converting values
+```Python
+# Return the number of seconds from the timecode
+seconds = timecode_1.get_seconds()
+
+# Return a normal string of a timecode
+timecode_string = timecode_1.seconds_to_timecode(seconds) 
+```
+
+Timecode objects can be calculated using normal logical comparisons such as + - == and !=.    
+In some cases, the comparison will use the seconds value of the object for the calculation, in others it won't.    
+```Python
+# Calculations returning new timecode objects
+new_timecode = timecode_1 + timecpde_2
+new_timecode = timecode_2 - timecode_1
+
+new_timecode = timecode_1 * int_or_float
+new_timecode = timecode_1 / int_or_float
+new_timecode = timecode_1 // int_or_float
+
+new_timecode = timecode_1 % timecode_2
+
+huge_timecode = timecode_1 ** 3
+
+# Calculations updating existing objects
+timecode_1 += timecode_2
+timecode_2 -= timecode_2
+
+# Calculations returning True or False
+timecode_1 < timecode_2
+timecode_1 <= timecode_2
+timecode_1 > timecode_2
+timecode_1 >= timecode_2
+
+timnecode_1 == timecode_2
+timecode_1 != timecode_2
 ```
