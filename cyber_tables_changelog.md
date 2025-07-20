@@ -1,6 +1,20 @@
 # Cyber Tables
 ## Changelog
 
+### 2025-07-20
+Fix: Added timecode to print_data_overview() function    
+Fix: Fixed an issue in ALE imports where rows containing a trailing null cell didn't import correctly        
+Added: Renaming a column now resets the column's longest value property. Can be turned off optionally with input check_new_longest_value = False        
+Fix: return_sub_table_by_columns() altered source columns when resetting indexes. This has been fixed to return a column duplicate first        
+Fix: return_sub_table_by_row_filters() also altered to use duplicated new row and column objects        
+New: Row object now has return_copy() to return a new instance of that row        
+Update: Added in syntax support for multiple aggregate calculations on a single column using command dict if calculations are in a list -> command_dict={3:["mean", "range"]}    
+New: CyberTable now has a set_category_properties() function to turn a column into a category column        
+New: Column has a reset_categories() function to remove the category data        
+New: Calculation column option added -> percentage_of_total        
+New: convert_binary_strings_to_bool() to convert typical string binaries to bool values    
+Update: _internal_add_column returns the added column's index    
+
 ### 2025-07-13
 New: Added a timecode data type for string starting in HH:MM:SS     
 New: Added a TimeCode class    
