@@ -445,18 +445,19 @@ cyber_table.add_calculation_column(reference_column_index = n, reference_column_
 - days_between: finds the number of days between two date or datetimes
 - above_theshold_percent: gives each row a True or False value if the reference column falls in the top n percent given in the calculation_value argument
 - below_threshold_percent: gives each row a True or False value if the reference column falls in the bottom n percent given in the calculation_value argument
+- percentage_of_total: Adds a column showing the numerical column's percentage of the table total    
 
 **Calculation column data type compatibility**
-Data Types | ntile | rank | individual_std | individual_variance | row_number | + days | - days | days_between | above_threshold_percent | below_threshold_percent
+Data Types | ntile | rank | individual_std | individual_variance | row_number | + days | - days | days_between | above_threshold_percent | below_threshold_percent | percentage_of_total
 ---|---|---|---|---|---|---|---|---|---|---
-string | | | | | X | | | | | | 
-int | X | X | X | X | X | | | | X | X |  
-decimal | X | X | X | X | X | | | | X | X | 
-bool | | | | | X | | | | | | 
-NULL | | | | | X | | | | | | 
-date | X | X | | | X | X | X | X | X | X | 
-datetime | X | X | | | X | X | X | X | X | X | 
-timecode | X | X | | | X | | | | X | X | 
+string | | | | | X | | | | | | | 
+int | X | X | X | X | X | | | | X | X | X
+decimal | X | X | X | X | X | | | | X | X | X
+bool | | | | | X | | | | | | | 
+NULL | | | | | X | | | | | | |
+date | X | X | | | X | X | X | X | X | X | |
+datetime | X | X | | | X | X | X | X | X | X | |
+timecode | X | X | | | X | | | | X | X | |
 
 ### String functions
 
