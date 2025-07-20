@@ -231,7 +231,8 @@ cyber_table.remove_row_data_by_column_index(n)
 Renaming a column
 ```Python
 # Remove a column by the index or column name
-cyber_table.rename_column(new_name, column_index = n, column_name = "name")
+# check_new_longest_value will check if the new value is longer than the longest value in the column
+cyber_table.rename_column(new_name, column_index = n, column_name = "name", check_new_longest_value = True)
 ```
 
 Returning column values
@@ -256,6 +257,12 @@ cyber_table.return_false_count_from_column(column_index = n, column_name = "name
 
 # Return the column index based on the index or name if the column index/name exists
 cyber_table.check_and_return_column_index(column_index = n, column_name = "name") -> int
+
+# Return categorical information from a string column set as being a category
+cyber_table.columns[index].get_categories()
+
+# Reset category data from string column
+cyber_table.columns[index].reset_categories() 
 ```
 
 Returning values based on a column
@@ -464,6 +471,17 @@ cyber_table.set_column_string_case(case, column_index = n, column_name = "name")
 # Check and convert any ISO 8601 date time values to a normal datetime and change the data type
 # Example os ISO 8601: 2025-06-27T12:01:05.142Z
 cyber_table.convert_iso_8601_string_to_datetime(column_index = n, column_name = "name")
+
+# Set a string column as a category and specify the values in order (the input list must not miss any values from the column - NULL does not have to be included)
+cyber_table.set_category_properties(column_index = n, column_name = "name", category_bool:bool = True, categories = ["value_1", "value_2", "value_3"])
+
+# Convert binary strings into bool data. Force will ignore any data not in the list and set it as NULL
+# Accepted strings: ["yes", "no", "y", "n", "1", "0"]
+cyber_table.convert_binary_strings_to_bool(column_index = None, column_name = None, force = False))
+
+# Convert null strings that aren't NULL to NULL
+# Accepted strings to replace with NULL: ["n/a", "na", "nan", "none", ""]
+cyber_table.convert_na_to_null(column_index = n, column_name = "name")
 ```
 
 ### Aggregating table data
@@ -487,6 +505,9 @@ aggregated_table = cyber_table.aggregate(reference_column_indexes = [0, 1],calcu
 
 # Example -> Performs the same as the example above but using the command dictionary.
 aggregated_table = cyber_table.aggregate(reference_column_indexes = [0, 1], command_dict = {4:"mean", 7:"sum"})
+
+# Example -> request multiple calculations from a single calculation column index
+aggregated_table = cyber_table.aggregate(reference_column_indexes = [0, 1], command_dict = {4:["mean", "median", "mode"})
 ```
 Aggregation descriptions:
 - sum: add up all values
@@ -568,6 +589,8 @@ for index, row in cyber_table.rows.items():
     new_item = "some calculation or something else"
     items[column_index] = new_item
     cyber_tables.rows[index].set_items(items)
+# Always analyse columns after adding a column manually
+cyber_table.analyse_columns()
 ```
 
 ### TimeCode class
