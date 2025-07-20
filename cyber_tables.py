@@ -5,9 +5,9 @@ import re
 from datetime import datetime, timedelta
 from datetime import time as dtime
 
-calculation_column_options = ["ntile", "rank", "individual_std", "individual_variance", "row_number", "+ days", "- days", "days_between", "above_threshold_percent", "below_threshold_percent"]
+calculation_column_options = ["ntile", "rank", "individual_std", "individual_variance", "row_number", "+ days", "- days", "days_between", "above_threshold_percent", "below_threshold_percent", "percentage_of_total"]
 aggregation_options = ["sum", "mean", "mode", "median", "max", "min", "nulls", "non_nulls", "row_counts", "standard_deviation", "variance", "range", "true_percentage", "false_percentage"]      
-print_data_overview_options = ["all", "numeric", "string", "bool", "date"]
+print_data_overview_options = ["all", "numeric", "string", "bool", "date", "timecode"]
 
 class TimeCode():
     def __init__(self, input_datetime = None, input_seconds = None):
@@ -93,7 +93,6 @@ class TimeCode():
         return new_timecode
     def __hash__(self):
         return hash(self.value)
-    
     def get_seconds(self):
         hours, minutes, seconds = str(self.value).split(":")
         hours = int(hours)
@@ -114,6 +113,8 @@ class Column():
         self.index = index    
         self.allow_analyse = True
         self.longest_value = 0
+        self.is_category = False
+        self.category_order = {}
     def set_index(self, index):
         self.index = index
     def get_index(self):
@@ -136,12 +137,24 @@ class Column():
         self.longest_value = value
     def get_longest_value(self):
         return self.longest_value
+    def get_categories(self):
+        if self.is_category == False:
+            raise TypeError(f"This column is not set to be a category string")
+        return list(self.category_order.values())
+    def reset_categories(self):
+        self.is_category = False
+        self.category_order = {}     
     def print(self):
-        print(f"Index: {self.get_index()}, Name: {self.get_name()}, Data Type: {self.get_data_type()}, Unlocked: {self.get_analyse_property()}, Longest value: {self.get_longest_value()}")
+        return_string = f"Index: {self.get_index()}, Name: {self.get_name()}, Data Type: {self.get_data_type()}, Unlocked: {self.get_analyse_property()}, Longest value: {self.get_longest_value()}"
+        if self.data_type == "string":
+            return_string += f", Is Category: {self.is_category}, Categories: {self.category_order}"
+        print(return_string)
     def return_copy(self):
         new_column = Column(self.name, self.index, self.data_type)
         new_column.allow_analyse = self.allow_analyse
-        new_column.longest_value = self.longest_value
+        new_column.longest_value = self.longest_value   
+        new_column.is_category = self.is_category
+        new_column.category_order = self.category_order
         return new_column
     # Accepted data types = int, decimal, bool, date, datetime, string, null, timecode
         
@@ -157,6 +170,9 @@ class Row():
         self.items = items
     def get_items(self):
         return self.items  
+    def return_copy(self):
+        new_row = Row(self.index, self.items)
+        return new_row
     def print(self):
         print(f"Index: {self.get_index()}, Items: {self.get_items()}")
             
@@ -385,6 +401,20 @@ class CyberTable():
                 print_string += f" - Averages -> Mode: {mode[0]} ({mode[1]})\n\t"
                 print_string += f" - Data Summary -> Distinct values: {distincts}, NULL values: {nulls}"
                 
+            elif data_type == "timecode" and filter in ["all", "timecode"]:
+                min = self.return_min_value(idx)
+                max = self.return_max_value(idx)
+                range = self.return_range(idx)                
+                mean = self.return_mean(idx)
+                median = self.return_median(idx)
+                mode = self.return_mode(idx)
+                distincts = len(self.return_distinct_column_values(idx))  
+                nulls = self.return_null_count(idx)
+                
+                print_string += f" - Data Range -> Min: {min}, Max: {max}, Range: {range}\n\t"
+                print_string += f" - Averages -> Mean: {mean}, Median: {median}, Mode: {mode[0]} ({mode[1]})\n\t"
+                print_string += f" - Data Summary -> Distinct values: {distincts}, NULL values: {nulls}"
+                
         print(print_string)
 
     def column_names(self) -> str:
@@ -398,16 +428,18 @@ class CyberTable():
         return " |  ".join(column_names)
     
     ### Columns (Internal)
-    def _internal_add_column(self, column):
+    def _internal_add_column(self, column) -> int:
         if type(column) is Column:
-            column.set_longest_value(len(column.get_name()))
+            column.set_longest_value(len(column.get_name()))            
             self.columns[column.get_index()] = column        
             self._internal_increment_column_count()
+            return column.get_index()
         elif type(column) is str:
             new_column = Column(column, self.return_column_count())           
             new_column.set_longest_value(len(column))
             self.columns[new_column.get_index()] = new_column        
             self._internal_increment_column_count()
+            return new_column.get_index()
        
     def _internal_check_datatype_before_conversion(self, index, data_type) -> bool:
         try:            
@@ -594,7 +626,7 @@ class CyberTable():
             self.columns[column_index].unlock_datatype()     
             
     def change_column_data_type(self, new_data_type, column_index = None, column_name = None):
-        accepted_types = ["string", "int", "decimal", "bool", "date", "datetime", "NULL"]
+        accepted_types = ["string", "int", "decimal", "bool", "date", "datetime", "timecode", "NULL"]
         if new_data_type not in accepted_types:
             raise ValueError(f"Data type input {new_data_type} not in list of approved data types\nAccepted types: {accepted_types}")
         
@@ -614,6 +646,56 @@ class CyberTable():
             self.columns[index].set_data_type(new_data_type)
         else:
             raise ValueError(f"Column index {index} failed pre-conversion checks for data type {new_data_type}")     
+    
+    def convert_binary_strings_to_bool(self, column_index = None, column_name = None, force = False):
+        index = self.check_and_return_column_index(column_index=column_index, column_name=column_name)
+        if index is None:
+            raise KeyError(f"Index not in list of known column indexes")
+        column_object = self.return_column_object_by_index(index)
+        data_type = column_object.get_data_type()
+        if data_type != "string":
+            raise TypeError(f"Can only convert string columns to bools, not type {data_type}")
+        
+        successful = 0
+        errors = 0
+        
+        accepted_string_binaries = ["yes", "no", "y", "n", "1", "0"]
+        
+        distinct_items = self.return_distinct_column_values(index)
+        for item in distinct_items:
+            if item != "NULL":
+                if str(item).lower() in accepted_string_binaries:
+                    successful += 1
+                else:
+                    errors += 1
+        
+        if errors != 0 and force == False:
+            raise ValueError(f"More items found in column than accepted list: {accepted_string_binaries}")
+        
+        for idx, row in self.rows.items():
+            items = row.get_items()
+            value = str(items[index]).lower()
+            if value in ["yes", "y", "1"]:
+                items[index] = True
+            elif value in ["no", "n", "0"]:
+                items[index] = False
+            else:
+                items[index] = "NULL"
+            self.update_row(idx, items)
+            
+        self.analyse_columns(index)
+    
+    def convert_na_to_null(self, column_index = None, column_name = None):
+        index = self.check_and_return_column_index(column_index=column_index, column_name=column_name)
+        if index is None:
+            raise KeyError(f"Index not in list of known column indexes")
+        for idx, row in self.rows.items():
+            items = row.get_items()
+            value = str(items[index]).lower()
+            
+            if value in ["n/a", "na", "nan", "none", ""]:
+                items[index] = "NULL"
+                self.update_row(idx, items)        
     
     def return_column_data(self, column_index = None, column_name = None, include_nulls = True) -> list:
         index = self.check_and_return_column_index(column_index=column_index, column_name=column_name)
@@ -659,6 +741,8 @@ class CyberTable():
             data_type = column.get_data_type()
             allow_analyse = column.get_analyse_property()
             longest_value = column.get_longest_value()
+            col_category = column.is_category
+            col_categories = column.category_order
                         
             if column_index is not None and index != column_index:
                 continue
@@ -703,6 +787,8 @@ class CyberTable():
             
             new_column = Column(name, index, data_type)
             new_column.set_longest_value(longest_value)
+            new_column.is_category = col_category
+            new_column.category_order = col_categories
             
             self.columns[index] = new_column   
             
@@ -725,8 +811,7 @@ class CyberTable():
                             timecode_object = TimeCode(value)
                             items[idx] = timecode_object
                             self.update_row(row_idx, items)
-
-                
+         
     def remove_row_data_by_column_index(self, removal_index):
         if removal_index > (self.column_count - 1):
             return None
@@ -742,10 +827,24 @@ class CyberTable():
             self.remove_row_data_by_column_index(index)
             return self.columns.pop(index)
                  
-    def rename_column(self, new_name, column_index = None, column_name = None):
+    def rename_column(self, new_name, column_index = None, column_name = None, check_new_longest_value = True):
         index = self.check_and_return_column_index(column_index=column_index, column_name=column_name) 
+        old_name = self.columns[index].get_name()
+        old_column_length = len(str(old_name))
+        
         if index is not None:
             self.columns[index].set_name(new_name)  
+            
+        if check_new_longest_value == True:
+            old_longest = self.columns[index].get_longest_value()
+            if old_column_length == old_longest:
+                new_longest = len(str(new_name))
+                data = self.return_column_data(index)
+                for item in data:
+                    length = len(str(item))
+                    if length > new_longest:
+                        new_longest = length
+                self.columns[index].set_longest_value(new_longest)                 
                  
     def insert_column(self, name) -> int:
         self.reset_column_indexes()
@@ -866,6 +965,47 @@ class CyberTable():
                     counter += 1
             return counter       
 
+    def set_category_properties(self, column_index = None, column_name = None, category_bool:bool = True, categories = []):
+        index = self.check_and_return_column_index(column_index=column_index, column_name=column_name)  
+        if index is None:
+            raise KeyError(f"Index not found in list of known column indexes")
+        
+        column_object = self.return_column_object_by_index(index)
+        data_type = column_object.get_data_type()
+                        
+        if category_bool == False:
+            column_object.reset_categories()
+            
+        elif category_bool == True:
+            if categories == []:
+                raise ValueError(f"Cannot create categories from an empty list")
+            if data_type != "string":
+                raise TypeError(f"Only strings can be a category, not {data_type}")
+            
+            distinct_categories = []
+            for category in categories:
+                if category not in distinct_categories:
+                    distinct_categories.append(category)
+            categories = distinct_categories            
+                  
+            distinct_values = self.return_distinct_column_values(index, include_nulls=True)
+            length = len(distinct_values)
+            input_length = len(categories)
+            if length > (input_length + 1):
+                raise ValueError(f"Column distinct values: {distinct_values} contains more categories than were specified in the input list: {categories} + NULL")
+            
+            if column_object.is_category == True:
+                column_object.reset_categories()   
+            column_object.is_category = True
+            
+            category_dict = {}
+            itetration = 1
+            for item in categories:
+                category_dict[itetration] = str(item)
+                itetration += 1   
+                         
+            column_object.category_order = category_dict
+
     ### Rows (Internal)
     def _internal_add_row(self, row:Row, index = None):    
         if index is not None:
@@ -880,8 +1020,6 @@ class CyberTable():
     def _internal_update_longest_items_by_single_row(self, row:Row):
         itteration = 0
         items = row.get_items()
-
-        updates = {}
 
         for idx, column in self.columns.items():
             column_name = column.get_name()  
@@ -898,7 +1036,6 @@ class CyberTable():
                 ...                 
             itteration += 1   
 
-    
     def _internal_return_row_object_by_index(self, index) -> Row:
         if index in self.rows.keys():
             return self.rows[index]
@@ -959,8 +1096,7 @@ class CyberTable():
         if len(column_indexes) == 1:
             return self._internal_return_rows_by_value_recursive(filtered_rows, [], [])
         else:
-            return self._internal_return_rows_by_value_recursive(filtered_rows, column_indexes[1:], values[1:])
-        
+            return self._internal_return_rows_by_value_recursive(filtered_rows, column_indexes[1:], values[1:]) 
     
     ### Rows   
     def add_row(self, row:list):
@@ -1059,13 +1195,25 @@ class CyberTable():
         index = self.check_and_return_column_index(column_index = column_index, column_name = column_name)
         if index is None:
             raise ValueError(f"Column name or index not recognised in list of known columns")
-
+        
+        column_object = self.return_column_object_by_index(index)
         distinct_values = self.return_distinct_column_values(column_index=index)   
+
 
         if mode == "desc":
             distinct_values.reverse()
         
         distinct_values.append("NULL")    
+        
+        is_column_category = column_object.is_category
+        if is_column_category == True:
+            categories = column_object.get_categories()
+            
+            if mode == "desc":
+                categories.reverse()              
+                
+            if "NULL" not in categories: categories.append("NULL")     
+            distinct_values = categories           
         
         row_dict = self.rows
         rows_length = len(row_dict)
@@ -1087,7 +1235,6 @@ class CyberTable():
                 for idx in pop_indexes:
                     row_dict.pop(idx)
                 pop_indexes = []
-                
 
         self.rows = {}
         self.rows = new_dict      
@@ -1389,7 +1536,7 @@ class CyberTable():
             range_chars = max_chars - min_chars
             return range_chars
         
-        if data_type is datetime:
+        if data_type is datetime or str(data_type) == "<class 'datetime.date'>":
             difference:timedelta = max - min
             return difference
 
@@ -1902,7 +2049,31 @@ class CyberTable():
                 else:
                     items.append("NULL")
                     self.update_row(idx, items)  
+        
+        elif calculation == "percentage_of_total":
+            if calculation_value is None:
+                raise ValueError(f"Threshold calculations require a calculation value in the form of an integer")
+            if reference_data_type not in ["int", "decimal"]:
+                raise ValueError(f"Threshold calculations require a reference column of int or decimal")
+            new_column.set_name("calculated_percentage_of_total")
+            new_column.set_data_type("decimal") 
             
+            data = self.return_column_data(reference_index, include_nulls=False)
+            total = 0
+            for item in data:
+                total += item
+            
+            for idx, row in self.rows.items():
+                items = row.items
+                value = items[reference_index]
+                if value != "NULL":
+                    percentage = (value / total) * 100                                      
+                    items.append(percentage)
+                    self.update_row(idx, items)        
+                else:
+                    items.append("NULL")
+                    self.update_row(idx, items)              
+         
         self._internal_add_column(new_column)
   
     ### Duplicates
@@ -1961,7 +2132,8 @@ class CyberTable():
         
         for column_index in found_indexes:
             column_object = self.return_column_object_by_index(column_index)
-            new_cyber_table._internal_add_column(column_object)
+            duplicated_column = column_object.return_copy()
+            new_cyber_table._internal_add_column(duplicated_column)
         
         for index in self.rows.keys():           
             sub_row = self.return_sub_row_by_index(index, found_indexes)  
@@ -1986,11 +2158,13 @@ class CyberTable():
         
         new_cyber_table = CyberTable()
         
-        for column in self.columns.values():                   
-            new_cyber_table._internal_add_column(column)
+        for column in self.columns.values():      
+            duplicated_column = column.return_copy()          
+            new_cyber_table._internal_add_column(duplicated_column)
         
         for idx, row_object in filtered_rows.items():           
-            new_cyber_table._internal_add_row(row_object, idx)
+            duplicated_row = row_object.return_copy()
+            new_cyber_table._internal_add_row(duplicated_row, idx)
             
         new_cyber_table.reset_row_indexes()
         new_cyber_table.reset_column_indexes()
@@ -2131,26 +2305,27 @@ class CyberTable():
     
     ### Grouping
     def return_groups(self, column_indexes = [], column_names = []) -> 'CyberTableGroup':
-        approved_indexes = self._internal_validate_return_column_indexes(column_indexes=column_indexes, column_names=column_names, raise_error=True)               
+        approved_indexes = self._internal_validate_return_column_indexes(column_indexes=column_indexes, column_names=column_names, raise_error=True)  
         
         copy = self.return_copy()
-        sub_table_list = self._internal_return_sub_table_groups_recursive([copy], approved_indexes)      
 
+        sub_table_list = self._internal_return_sub_table_groups_recursive([copy], approved_indexes) 
         
         table_group = CyberTableGroup()
+
         for table in sub_table_list:
-            table.row_count = len(table.rows)
+            table.row_count = len(table.rows)            
             table.reset_row_indexes()
-            table_group.add_table(table, approved_indexes)
-            
+            table_group.add_table(table, approved_indexes)        
+
         return table_group
       
     def aggregate(self, command_dict = {}, reference_column_indexes = [], reference_column_names = [], calculation_column_indexes = [], calculation_column_names = [], calculations = []) -> 'CyberTable':
        
         column_index_list = self._internal_validate_return_column_indexes(column_indexes=reference_column_indexes, column_names=reference_column_names, raise_error=True)
         calculation_column_index_list = []
-        calculations = calculations
-                
+        calculations = calculations        
+ 
         if command_dict != {}:                        
             calculations = []
             for identifier_value, calculation in command_dict.items():                
@@ -2159,8 +2334,13 @@ class CyberTable():
                 else:
                     index = self.return_column_index_by_name(identifier_value)
                     
-                calculation_column_index_list.append(index)
-                calculations.append(calculation)
+                if isinstance(calculation, list):
+                    for sub_calculation in calculation:
+                        calculation_column_index_list.append(index)
+                        calculations.append(sub_calculation)
+                else:
+                    calculation_column_index_list.append(index)
+                    calculations.append(calculation)
                 
         elif calculation_column_indexes != [] or calculation_column_names != []:
             calculation_column_index_list = self._internal_validate_return_column_indexes(column_indexes=calculation_column_indexes, column_names=calculation_column_indexes, raise_error=True)
@@ -2245,16 +2425,23 @@ class CyberTableGroup():
     def add_table(self, table, group_indexes = []):          
         if self.grouped_indexes == []:
             self.grouped_indexes = group_indexes
-            
+              
         if self.table_count == 0:
-            for idx, column in table.columns.items():
-                name = column.get_name()
-                data_type = column.get_data_type()
-                permissions = column.get_analyse_property()
+            for idx, column in table.columns.items():                
+                duplciate_column = column.return_copy()                
                 
-                new_column = Column(name, idx, data_type)
-                new_column.allow_analyse = permissions                
-                self.columns[idx] = column
+                #name = column.get_name()
+                #data_type = column.get_data_type()
+                #permissions = column.get_analyse_property()
+                #category = column.is_category
+                #categories = column.category_order
+                
+                #new_column = Column(name, idx, data_type)
+                #new_column.is_category = category
+                #new_column.category_order = categories
+                #new_column.allow_analyse = permissions 
+                              
+                self.columns[idx] = duplciate_column
                 
             self.groups.append(table)
             self._internal_increment_table_count()
@@ -2290,8 +2477,13 @@ class CyberTableGroup():
                 else:
                     index = self.return_column_index_by_name(identifier)
                     
-                calculation_column_indexes.append(index)
-                calculations.append(calculation)
+                if isinstance(calculation, list):
+                    for sub_calculation in calculation:
+                        calculation_column_indexes.append(index)
+                        calculations.append(sub_calculation)
+                else:
+                    calculation_column_indexes.append(index)
+                    calculations.append(calculation)
         
         elif calculation_column_indexes != [] or calculation_column_names != []:
             calculation_column_indexes = self._internal_validate_return_column_indexes(column_indexes=calculation_column_indexes, column_names=calculation_column_names, raise_error=True)
@@ -2300,17 +2492,30 @@ class CyberTableGroup():
             raise KeyError(f"Count of columns {len(calculation_column_indexes)} does not match the number of calculations {len(calculations)}")
         
         aggregate_cybertable = CyberTable()
-        
+            
         for index in reference_column_index_list:
             if index in calculation_column_indexes:
                 raise KeyError(f"Reference columns cannot also be calculation columns, they bust be distinctly separate")         
-            reference_name = self._internal_return_column_object_by_index(index).get_name()
-            aggregate_cybertable._internal_add_column(reference_name)     
+            column_object = self._internal_return_column_object_by_index(index)
+            column_duplicate = column_object.return_copy()
             
+            #reference_name = column_object.get_name()
+            #category = column_object.is_category
+            #categories = column_object.category_order
+            #data_type = column_object.get_data_type()
+
+            aggregate_cybertable._internal_add_column(column_duplicate)   
+                        
+            #if category == True:  
+            #    aggregate_cybertable.set_category_properties(column_index=new_index, categories=categories)            
+        
+        aggregate_cybertable.reset_column_indexes()
+        
         for idx in range(len(calculation_column_indexes)):
             calculation_column_index = calculation_column_indexes[idx]
             calculation = calculations[idx]
-            new_name = self._internal_return_column_object_by_index(calculation_column_index).get_name() + "_" + calculation           
+            
+            new_name = self._internal_return_column_object_by_index(calculation_column_index).get_name() + "_" + calculation  
             aggregate_cybertable._internal_add_column(new_name)
 
         row_index = 0
@@ -2379,7 +2584,7 @@ class CyberTableGroup():
             row_index += 1
         
         aggregate_cybertable.reset_column_indexes()
-        aggregate_cybertable.reset_row_indexes()   
+        aggregate_cybertable.reset_row_indexes()  
         aggregate_cybertable.analyse_columns()
         aggregate_cybertable._internal_update_column_longest_values()
         
@@ -2652,11 +2857,13 @@ def open_avid_ale(file):
         cyber_table = CyberTable()
         for header in headers:
             cyber_table._internal_add_column(header)
-        
+        column_count = cyber_table.return_column_count()
+        added = 0
         for entry in data:
             row_data = entry
-            if row_data[-1] == "\n": row_data = row_data[:-1]
+            if row_data[-1] == "\n" and column_count == added: row_data = row_data[:-1]
             cyber_table.add_row(row_data)
+            added += 1
 
         cyber_table.analyse_columns()       
         return cyber_table
@@ -2684,3 +2891,4 @@ def help():
         print(f"Options for adding calculation columns: {calculation_column_options}")
         print(f"Options for aggrgating table data: {aggregation_options}")
         print(f"Options for printing data overview: {print_data_overview_options}")
+
