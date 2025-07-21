@@ -342,7 +342,7 @@ new_table = cyber_table.return_sub_table_by_columns(column_indexes = [], column_
 # Return a cub table where items in the values list occur within select columns. All conditions must be true for a row to be returned.
 # For example, values = [1, 2], column_indexes = [4, 7] would return a sub table for all rows where column index 4 = 1, and column index 7 = 2.
 # Using the command dict will take priority over the lists that perform the same function. command_dict = {4:1, 7:2} achieves the same as the line above.   
-new_table = cyber_table.return_sub_table_by_row_filters(self, values:list , command_dict = {}, column_indexes = [], column_names = []) -> CyberTable
+new_table = cyber_table.return_sub_table_by_row_filters(self, values:list , column_indexes = [], column_names = []) -> CyberTable
 ```
 
 ### Returning calculations
